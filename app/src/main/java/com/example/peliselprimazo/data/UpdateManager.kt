@@ -166,11 +166,29 @@ class UpdateManager @Inject constructor(
         }
     }
 
+    private var pendingInstallFile: File? = null
+
+    fun checkAndInstallPending() {
+        val file = pendingInstallFile ?: return
+        if (file.exists()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (context.packageManager.canRequestPackageInstalls()) {
+                    pendingInstallFile = null
+                    installApk(file)
+                }
+            } else {
+                pendingInstallFile = null
+                installApk(file)
+            }
+        }
+    }
+
     fun installApk(file: File) {
         if (!file.exists()) return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
+                pendingInstallFile = file
                 val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${context.packageName}")
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -180,6 +198,7 @@ class UpdateManager @Inject constructor(
             }
         }
 
+        pendingInstallFile = null
         try {
             val uri = FileProvider.getUriForFile(
                 context,

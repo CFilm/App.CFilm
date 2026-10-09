@@ -25,18 +25,23 @@ class ConfigRepositoryImpl @Inject constructor(
             val latestName = remoteConfig.getString("latest_version_name")
             val updateUrl = remoteConfig.getString("update_url")
             val isForce = remoteConfig.getBoolean("is_force_update")
-            val currentVersion = BuildConfig.VERSION_CODE
+            val currentVersionCode = BuildConfig.VERSION_CODE
+            val currentVersionName = BuildConfig.VERSION_NAME
             
             val visualFlags = mutableMapOf<String, String>()
             remoteConfig.all.forEach { (key, value) ->
                 visualFlags[key] = value.asString()
             }
             
+            val isAvailable = latestVersion > currentVersionCode && 
+                              latestName.isNotBlank() && 
+                              latestName != currentVersionName
+
             trySend(UpdateConfig(
                 latestVersionCode = latestVersion,
                 latestVersionName = latestName.ifBlank { "2.3.0" },
                 updateUrl = updateUrl,
-                isUpdateAvailable = latestVersion > currentVersion,
+                isUpdateAvailable = isAvailable,
                 isForceUpdate = isForce,
                 visualFlags = visualFlags
             ))

@@ -165,6 +165,10 @@ class HomeViewModel @Inject constructor(
         updateManager.clearError()
     }
 
+    fun checkPendingInstall() {
+        updateManager.checkAndInstallPending()
+    }
+
     fun showRewardedVideo(activity: Activity, placementName: String? = null, onReward: () -> Unit) {
         adsManager.showRewardedVideo(activity, placementName, onReward)
     }
