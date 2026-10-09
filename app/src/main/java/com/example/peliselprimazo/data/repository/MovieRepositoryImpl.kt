@@ -42,7 +42,8 @@ data class InternalFileInfo(
     val season: Int?,
     val episode: Int?,
     val isTv: Boolean,
-    val isAnime: Boolean
+    val isAnime: Boolean,
+    val language: String = "Latino"
 )
 
 data class TmdbData(
@@ -163,7 +164,7 @@ class MovieRepositoryImpl @Inject constructor(
 
                 val parsedItems = allFiles.map { pair ->
                     val info = parseFileName(pair.first)
-                    info to pair.second.copy(season = info.season, episode = info.episode)
+                    info to pair.second.copy(season = info.season, episode = info.episode, language = info.language)
                 }
 
                 val grouped = parsedItems.groupBy { pair ->
@@ -280,10 +281,23 @@ class MovieRepositoryImpl @Inject constructor(
             cleanTitle = cleanTitle.replace(year, "")
         }
 
+        val lower = name.lowercase()
+        val language = when {
+            lower.contains("ingles") || lower.contains("english") -> "Inglés"
+            lower.contains("aleman") || lower.contains("german") -> "Alemán"
+            lower.contains("frances") || lower.contains("french") -> "Francés"
+            lower.contains("japones") || lower.contains("japanese") -> "Japonés"
+            lower.contains("castellano") -> "Castellano"
+            lower.contains("sub") || lower.contains("subtitulado") -> "Subtitulado"
+            lower.contains("latino") || lower.contains("lat") -> "Latino"
+            else -> "Latino"
+        }
+
         val noiseTags = listOf(
             "1080p", "720p", "480p", "h264", "h265", "x264", "x265", 
             "bluray", "webrip", "latino", "español", "castellano", "dual", 
-            "sub", "subs", "subtitulado", "multi", "hdrip", "dvdrip", "remux", "streamtape"
+            "sub", "subs", "subtitulado", "multi", "hdrip", "dvdrip", "remux", "streamtape",
+            "ingles", "english", "aleman", "german", "frances", "french", "japones", "japanese"
         )
         noiseTags.forEach { tag ->
             cleanTitle = cleanTitle.replace(Regex("(?i)\\b$tag\\b"), "")
@@ -295,7 +309,7 @@ class MovieRepositoryImpl @Inject constructor(
             
         if (cleanTitle.isEmpty()) cleanTitle = nameWithoutExt.trim()
 
-        return InternalFileInfo(cleanTitle, year, season, episode, isTv, isAnime)
+        return InternalFileInfo(cleanTitle, year, season, episode, isTv, isAnime, language)
     }
 
     private suspend fun fetchTmdbData(info: InternalFileInfo): TmdbData? {

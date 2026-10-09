@@ -2,7 +2,9 @@ package com.example.peliselprimazo.ui.screens.player
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,10 +14,13 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
@@ -23,8 +28,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -118,6 +125,7 @@ fun PlayerScreen(
                     NativePlayer(
                         movieTitle = state.movie.title,
                         currentLink = state.currentLink,
+                        allMovieLinks = state.movie.serverLinks,
                         isSeries = isSeries,
                         videoUrl = state.videoUrl,
                         headers = state.headers,
@@ -141,6 +149,9 @@ fun PlayerScreen(
                                 } ?: viewModel.loadVideo(prev.serverName, prev.fileId, state.movie.id)
                             }
                         },
+                        onSelectLanguage = { selectedLink ->
+                            viewModel.loadVideo(selectedLink.serverName, selectedLink.fileId, state.movie.id)
+                        },
                         onProgress = { pos, dur ->
                             viewModel.updateProgress(pos, dur)
                         },
@@ -151,7 +162,7 @@ fun PlayerScreen(
                     
                     if (state.isChangingEpisode) {
                         Box(
-                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f)),
+                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.85f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -182,11 +193,36 @@ fun PlayerScreen(
     }
 }
 
+@Composable
+fun VerticalProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = Color.White.copy(alpha = 0.2f)
+) {
+    Box(
+        modifier = modifier
+            .width(8.dp)
+            .clip(CircleShape)
+            .background(trackColor),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(progress.coerceIn(0f, 1f))
+                .clip(CircleShape)
+                .background(color)
+        )
+    }
+}
+
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun NativePlayer(
     movieTitle: String,
     currentLink: ServerLink?,
+    allMovieLinks: List<ServerLink> = emptyList(),
     isSeries: Boolean,
     videoUrl: String,
     headers: Map<String, String>,
@@ -194,14 +230,31 @@ fun NativePlayer(
     onBack: () -> Unit,
     onNext: (() -> Unit)? = null,
     onPrev: (() -> Unit)? = null,
+    onSelectLanguage: ((ServerLink) -> Unit)? = null,
     onProgress: (position: Long, duration: Long) -> Unit,
     onError: () -> Unit
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
+    val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    val maxVolume = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1) }
+
     var isPlaying by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableStateOf(0L) }
     var duration by remember { mutableStateOf(0L) }
     var showControls by remember { mutableStateOf(true) }
+
+    var currentVolume by remember { mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat()) }
+    var currentBrightness by remember {
+        mutableFloatStateOf(
+            activity?.window?.attributes?.screenBrightness.takeIf { it != null && it >= 0f } ?: 0.5f
+        )
+    }
+
+    var showVolumeOverlay by remember { mutableStateOf(false) }
+    var showBrightnessOverlay by remember { mutableStateOf(false) }
+    var isDraggingLeft by remember { mutableStateOf(false) }
+    var isDraggingRight by remember { mutableStateOf(false) }
 
     val exoPlayer = remember(context) {
         ExoPlayer.Builder(context).build()
@@ -231,6 +284,20 @@ fun NativePlayer(
         if (showControls && isPlaying) {
             delay(4000)
             showControls = false
+        }
+    }
+
+    LaunchedEffect(showVolumeOverlay) {
+        if (showVolumeOverlay) {
+            delay(2000)
+            showVolumeOverlay = false
+        }
+    }
+
+    LaunchedEffect(showBrightnessOverlay) {
+        if (showBrightnessOverlay) {
+            delay(2000)
+            showBrightnessOverlay = false
         }
     }
 
@@ -276,6 +343,41 @@ fun NativePlayer(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        val isLeft = offset.x < size.width / 2f
+                        isDraggingLeft = isLeft
+                        isDraggingRight = !isLeft
+                    },
+                    onDragEnd = {
+                        isDraggingLeft = false
+                        isDraggingRight = false
+                    },
+                    onDragCancel = {
+                        isDraggingLeft = false
+                        isDraggingRight = false
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val deltaY = -dragAmount.y / size.height.toFloat()
+
+                        if (isDraggingLeft) {
+                            currentBrightness = (currentBrightness + deltaY * 1.5f).coerceIn(0.01f, 1.0f)
+                            activity?.window?.let { window ->
+                                val lp = window.attributes
+                                lp.screenBrightness = currentBrightness
+                                window.attributes = lp
+                            }
+                            showBrightnessOverlay = true
+                        } else if (isDraggingRight) {
+                            currentVolume = (currentVolume + deltaY * maxVolume.toFloat() * 1.5f).coerceIn(0f, maxVolume.toFloat())
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume.toInt(), 0)
+                            showVolumeOverlay = true
+                        }
+                    }
+                )
+            }
             .clickable { showControls = !showControls }
     ) {
         AndroidView(
@@ -293,6 +395,96 @@ fun NativePlayer(
             modifier = Modifier.fillMaxSize()
         )
 
+        // Overlay Brillo Vertical (Lado Izquierdo)
+        AnimatedVisibility(
+            visible = showBrightnessOverlay,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 32.dp)
+        ) {
+            Surface(
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = if (currentBrightness > 0.5f) Icons.Rounded.WbSunny else Icons.Rounded.BrightnessMedium,
+                        contentDescription = "Brillo",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${(currentBrightness * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    VerticalProgressBar(
+                        progress = currentBrightness,
+                        modifier = Modifier.height(100.dp)
+                    )
+                }
+            }
+        }
+
+        // Overlay Volumen Vertical (Lado Derecho)
+        AnimatedVisibility(
+            visible = showVolumeOverlay,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 32.dp)
+        ) {
+            Surface(
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+            ) {
+                val volumePercent = currentVolume / maxVolume.toFloat()
+                val volumeIcon = when {
+                    volumePercent <= 0f -> Icons.Rounded.VolumeOff
+                    volumePercent < 0.5f -> Icons.Rounded.VolumeDown
+                    else -> Icons.Rounded.VolumeUp
+                }
+
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = volumeIcon,
+                        contentDescription = "Volumen",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${(volumePercent * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    VerticalProgressBar(
+                        progress = volumePercent,
+                        modifier = Modifier.height(100.dp)
+                    )
+                }
+            }
+        }
+
+        // Animated Controls Overlay
         AnimatedVisibility(
             visible = showControls,
             enter = fadeIn(),
@@ -348,6 +540,73 @@ fun NativePlayer(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+
+                    // Selector de Idiomas
+                    val availableLanguages = remember(currentLink, allMovieLinks) {
+                        val filtered = if (isSeries && currentLink?.season != null && currentLink.episode != null) {
+                            allMovieLinks.filter { it.season == currentLink.season && it.episode == currentLink.episode }
+                        } else {
+                            allMovieLinks
+                        }
+                        filtered.distinctBy { it.language }
+                    }
+
+                    var showLanguageMenu by remember { mutableStateOf(false) }
+
+                    if (availableLanguages.size > 1) {
+                        Box {
+                            Surface(
+                                onClick = { showLanguageMenu = true },
+                                color = Color.Black.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(20.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Translate,
+                                        contentDescription = "Idioma",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = currentLink?.language ?: "Idioma",
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showLanguageMenu,
+                                onDismissRequest = { showLanguageMenu = false },
+                                modifier = Modifier.background(Color(0xFF1A1A1A))
+                            ) {
+                                availableLanguages.forEach { link ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = link.language,
+                                                color = if (link.language == currentLink?.language) MaterialTheme.colorScheme.primary else Color.White,
+                                                fontWeight = if (link.language == currentLink?.language) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        },
+                                        onClick = {
+                                            showLanguageMenu = false
+                                            if (link.fileId != currentLink?.fileId) {
+                                                exoPlayer.stop()
+                                                onSelectLanguage?.invoke(link)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // Center Controls

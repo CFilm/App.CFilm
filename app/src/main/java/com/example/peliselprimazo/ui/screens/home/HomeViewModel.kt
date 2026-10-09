@@ -111,37 +111,115 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val movieSections = allContent.map { list ->
-        createCategorySections(list.filter { it.contentType == ContentType.MOVIE }, "Películas")
+        createMovieSections(list.filter { it.contentType == ContentType.MOVIE })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val seriesSections = allContent.map { list ->
-        createCategorySections(list.filter { it.contentType == ContentType.TV }, "Series")
+        createSeriesSections(list.filter { it.contentType == ContentType.TV })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun createSections(list: List<Movie>, watching: List<Movie>, trends: List<Movie>): List<HomeSection> {
         if (list.isEmpty()) return emptyList()
+        val watchLater = list.filter { it.isWatchLater }
         return buildList {
-            if (watching.isNotEmpty()) add(HomeSection("Continuar Viendo", watching.take(12), isWatchingSection = true))
-            if (trends.isNotEmpty()) add(HomeSection("Tendencias Globales", trends))
-            add(HomeSection("Estrenos Exclusivos", list.sortedByDescending { it.releaseDate }.take(15)))
-            add(HomeSection("Los más valorados", list.sortedByDescending { it.rating }.take(15)))
+            if (watching.isNotEmpty()) add(HomeSection("🍿 Continuar Viendo", watching.take(12), isWatchingSection = true))
+            add(HomeSection("✨ Para Ti", list.shuffled().take(15)))
+            if (trends.isNotEmpty()) add(HomeSection("🔥 Tendencias Globales", trends)) else add(HomeSection("🔥 Tendencias Globales", list.sortedByDescending { it.rating }.take(15)))
+            add(HomeSection("🚀 Estrenos Exclusivos", list.sortedByDescending { it.releaseDate }.take(15)))
+            add(HomeSection("⭐ Los Más Valorados", list.sortedByDescending { it.rating }.take(15)))
+            if (watchLater.isNotEmpty()) add(HomeSection("🕒 Guardados Para Ver Después", watchLater))
+            add(HomeSection("❤️ Recomendados Especiales", list.shuffled().take(15)))
             
-            listOf("Acción", "Comedia", "Ciencia Ficción", "Terror", "Drama").forEach { genre ->
-                val filtered = list.filter { it.genres.contains(genre) }
-                if (filtered.isNotEmpty()) add(HomeSection(genre, filtered.shuffled().take(15)))
+            val genreSections = listOf(
+                "💥 Acción Extrema & Adrenalina" to listOf("Acción", "Aventura"),
+                "🛸 Ciencia Ficción & Futuro" to listOf("Ciencia Ficción", "Sci-Fi"),
+                "😱 Terror & Suspenso Nocturno" to listOf("Terror", "Suspenso", "Horror"),
+                "😂 Comedias Para Reír A Carcajadas" to listOf("Comedia"),
+                "🎭 Dramas Intensos & Conmovedores" to listOf("Drama"),
+                "🦄 Fantasía & Mundos Mágicos" to listOf("Fantasía", "Fantasy"),
+                "🔍 Misterio & Investigaciones" to listOf("Misterio", "Crimen"),
+                "💘 Romances & Amores Inolvidables" to listOf("Romance"),
+                "⚡ Aventura & Viajes Épicos" to listOf("Aventura"),
+                "🏆 Joyas Del Cine Aclamadas" to listOf("Drama", "Historia"),
+                "👑 Maratón De Súper Sagas" to listOf("Acción", "Fantasía"),
+                "🌟 Lo Más Visto De La Semana" to listOf("Acción", "Comedia"),
+                "🎬 Favoritos De La Crítica" to listOf("Drama", "Suspenso")
+            )
+
+            genreSections.forEach { (title, genres) ->
+                val filtered = list.filter { m -> genres.any { g -> m.genres.any { mg -> mg.contains(g, ignoreCase = true) } } }
+                val content = if (filtered.isNotEmpty()) filtered.shuffled().take(15) else list.shuffled().take(12)
+                add(HomeSection(title, content))
             }
         }
     }
 
-    private fun createCategorySections(list: List<Movie>, baseTitle: String): List<HomeSection> {
+    private fun createMovieSections(list: List<Movie>): List<HomeSection> {
         if (list.isEmpty()) return emptyList()
         return buildList {
-            add(HomeSection("Recomendados de $baseTitle", list.shuffled().take(15)))
-            add(HomeSection("Populares", list.sortedByDescending { it.rating }.take(15)))
-            
-            listOf("Acción", "Suspenso", "Animación", "Aventura").forEach { genre ->
-                val filtered = list.filter { it.genres.contains(genre) }
-                if (filtered.isNotEmpty()) add(HomeSection(genre, filtered.shuffled().take(15)))
+            add(HomeSection("🎬 Recomendados De Películas", list.shuffled().take(15)))
+            add(HomeSection("✨ Películas Para Ti", list.shuffled().take(15)))
+            add(HomeSection("🔥 Películas Más Populares", list.sortedByDescending { it.rating }.take(15)))
+            add(HomeSection("⭐ Las Mejor Valoradas", list.sortedByDescending { it.rating }.take(15)))
+            add(HomeSection("🚀 Recientes & Estrenos", list.sortedByDescending { it.releaseDate }.take(15)))
+
+            val categoryMap = listOf(
+                "🍿 Cine De Taquilla" to listOf("Acción", "Aventura"),
+                "💥 Pura Acción & Explosiones" to listOf("Acción"),
+                "🛸 Ciencia Ficción & Universos" to listOf("Ciencia Ficción"),
+                "👻 Espantosas & Terror" to listOf("Terror"),
+                "😂 Para Morirse De Risa" to listOf("Comedia"),
+                "🎭 Historias Dramáticas" to listOf("Drama"),
+                "🔪 Suspenso & Thrillers" to listOf("Suspenso"),
+                "🏰 Fantasía & Magia" to listOf("Fantasía"),
+                "🕵️‍♂️ Crimen & Investigaciones" to listOf("Crimen"),
+                "💘 Historias De Amor" to listOf("Romance"),
+                "🌴 Aventuras Inolvidables" to listOf("Aventura"),
+                "🦸‍♂️ Superhéroes & Cómics" to listOf("Acción", "Fantasía"),
+                "👾 Animación & Familia" to listOf("Animación", "Familia"),
+                "📜 Hechos Reales & Historia" to listOf("Historia", "Biografía"),
+                "💎 Clásicos Que Tienes Que Ver" to listOf("Drama", "Acción")
+            )
+
+            categoryMap.forEach { (title, genres) ->
+                val filtered = list.filter { m -> genres.any { g -> m.genres.any { mg -> mg.contains(g, ignoreCase = true) } } }
+                val content = if (filtered.isNotEmpty()) filtered.shuffled().take(15) else list.shuffled().take(12)
+                add(HomeSection(title, content))
+            }
+        }
+    }
+
+    private fun createSeriesSections(list: List<Movie>): List<HomeSection> {
+        if (list.isEmpty()) return emptyList()
+        return buildList {
+            add(HomeSection("📺 Recomendados De Series", list.shuffled().take(15)))
+            add(HomeSection("✨ Series Para Ti", list.shuffled().take(15)))
+            add(HomeSection("🔥 Series Más Populares", list.sortedByDescending { it.rating }.take(15)))
+            add(HomeSection("🏆 Series Aclamadas", list.sortedByDescending { it.rating }.take(15)))
+            add(HomeSection("🍿 Maratones De Fin De Semana", list.shuffled().take(15)))
+
+            val categoryMap = listOf(
+                "💥 Series De Acción" to listOf("Acción"),
+                "🛸 Universos & Ciencia Ficción" to listOf("Ciencia Ficción"),
+                "😱 Suspenso & Tensión" to listOf("Suspenso"),
+                "😂 Comedias Divertidas" to listOf("Comedia"),
+                "🎭 Dramas & Pasiones" to listOf("Drama"),
+                "🔍 Casos & Misterios" to listOf("Misterio", "Crimen"),
+                "🐉 Fantasía Épica" to listOf("Fantasía"),
+                "🚓 Crimen & Mafia" to listOf("Crimen"),
+                "💘 Romances De Serie" to listOf("Romance"),
+                "🤠 Aventuras & Fronteras" to listOf("Aventura"),
+                "👑 Intrigas De Poder" to listOf("Drama"),
+                "🏫 Sobrenatural & Paranormal" to listOf("Terror", "Fantasía"),
+                "🦾 Dystopias & Futuro" to listOf("Ciencia Ficción"),
+                "⭐ Éxitos De Temporada" to listOf("Acción", "Drama"),
+                "🌟 Imperdibles En Pantalla" to listOf("Drama", "Comedia")
+            )
+
+            categoryMap.forEach { (title, genres) ->
+                val filtered = list.filter { m -> genres.any { g -> m.genres.any { mg -> mg.contains(g, ignoreCase = true) } } }
+                val content = if (filtered.isNotEmpty()) filtered.shuffled().take(15) else list.shuffled().take(12)
+                add(HomeSection(title, content))
             }
         }
     }
