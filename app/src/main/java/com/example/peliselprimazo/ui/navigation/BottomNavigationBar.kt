@@ -15,7 +15,6 @@ fun BottomNavigationBar(navController: NavHostController) {
         Screen.Home,
         Screen.Movies,
         Screen.Series,
-        Screen.Anime,
         Screen.Profile
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()

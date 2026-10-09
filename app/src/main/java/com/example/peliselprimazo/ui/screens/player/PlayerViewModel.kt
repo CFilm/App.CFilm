@@ -24,10 +24,11 @@ sealed class PlayerUiState {
         val movie: Movie,
         val currentLink: ServerLink? = null,
         val nextLink: ServerLink? = null,
+        val prevLink: ServerLink? = null,
         val videoUrl: String,
         val adUrl: String? = null,
         val headers: Map<String, String> = emptyMap(),
-        val isEmbed: Boolean = true,
+        val isEmbed: Boolean = false,
         val serverName: String = "",
         val resumePosition: Long = 0L,
         val isChangingEpisode: Boolean = false
@@ -90,23 +91,16 @@ class PlayerViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Aseguramos formato /e/ (Embed) en todos los servidores conocidos para reducir basura
-                val videoUrlToLoad = when (serverName.lowercase()) {
-                    "streamtape" -> "https://streamtape.com/e/$fileId"
-                    "doodstream", "dood" -> "https://dood.to/e/$fileId"
-                    "filemoon" -> "https://filemoon.sx/e/$fileId"
-                    "vidhide", "vidhidepro", "vidhidevip" -> "https://vidhidepro.com/e/$fileId"
-                    "upstream" -> "https://upstream.to/e/$fileId"
-                    "voe" -> "https://voe.sx/e/$fileId"
-                    else -> {
-                        val extractor = extractorFactory.getExtractor(serverName)
-                        extractor.extract(fileId, repository)
-                    }
-                }
+                val extractor = extractorFactory.getExtractor(serverName)
+                val validPreloaded = if (!preloadedUrl.isNullOrBlank() && preloadedUrl != "null") preloadedUrl else null
+                val videoUrlToLoad = validPreloaded ?: extractor.extract(fileId, repository)
+                val headers = extractor.getHeaders(fileId)
+                Log.d(tag, "Loading video: server=$serverName, fileId=$fileId, preloadedUrl=$preloadedUrl, videoUrlToLoad=$videoUrlToLoad")
 
                 if (!videoUrlToLoad.isNullOrBlank()) {
                     val currentLink = movie.serverLinks.find { it.fileId == fileId }
                     val nextLink = findNextEpisode(movie, currentLink)
+                    val prevLink = findPreviousEpisode(movie, currentLink)
 
                     val config = getUpdateConfigUseCase().firstOrNull()
                     val remoteAdUrl = config?.visualFlags?.get("ui_player_ad_vast_url")
@@ -116,9 +110,11 @@ class PlayerViewModel @Inject constructor(
                         movie = movie,
                         currentLink = currentLink,
                         nextLink = nextLink,
+                        prevLink = prevLink,
                         videoUrl = videoUrlToLoad,
                         adUrl = adUrl,
-                        isEmbed = true,
+                        headers = headers,
+                        isEmbed = false,
                         serverName = serverName,
                         resumePosition = if (currentState is PlayerUiState.Success) 0L else movie.lastPosition,
                         isChangingEpisode = false
@@ -145,6 +141,19 @@ class PlayerViewModel @Inject constructor(
             .filter { it.season == current.season }
             .find { it.episode == current.episode + 1 }
         if (nextInAnyServer != null) return nextInAnyServer
+        return null
+    }
+
+    private fun findPreviousEpisode(movie: Movie, current: ServerLink?): ServerLink? {
+        if (current == null || current.episode == null || current.episode <= 1) return null
+        val prevInSameServer = movie.serverLinks
+            .filter { it.season == current.season && it.serverName == current.serverName }
+            .find { it.episode == current.episode - 1 }
+        if (prevInSameServer != null) return prevInSameServer
+        val prevInAnyServer = movie.serverLinks
+            .filter { it.season == current.season }
+            .find { it.episode == current.episode - 1 }
+        if (prevInAnyServer != null) return prevInAnyServer
         return null
     }
 

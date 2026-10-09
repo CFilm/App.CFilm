@@ -83,11 +83,9 @@ fun HomeScreen(
     val homeSections by viewModel.homeSections.collectAsState()
     val movieSections by viewModel.movieSections.collectAsState()
     val seriesSections by viewModel.seriesSections.collectAsState()
-    val animeSections by viewModel.animeSections.collectAsState()
     
     val moviesListFiltered by viewModel.moviesListFiltered.collectAsState()
     val seriesListFiltered by viewModel.seriesListFiltered.collectAsState()
-    val animeListFiltered by viewModel.animeListFiltered.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
 
     val watchingContent by viewModel.watchingContent.collectAsState()
@@ -101,6 +99,7 @@ fun HomeScreen(
     
     val isDownloading by viewModel.isDownloading.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
+    val updateError by viewModel.updateError.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -127,7 +126,6 @@ fun HomeScreen(
         "all" to "Inicio",
         "movie" to "Películas",
         "series" to "Series",
-        "anime" to "Anime",
         "profile" to "Perfil"
     )
 
@@ -172,8 +170,7 @@ fun HomeScreen(
                                 0 -> HomeSectionsContent(homeSections, onMovieClick, handlePlayRequest, homeAnnouncement)
                                 1 -> CategoryTabContent(movieSections, moviesListFiltered, selectedGenre, onMovieClick)
                                 2 -> CategoryTabContent(seriesSections, seriesListFiltered, selectedGenre, onMovieClick)
-                                3 -> CategoryTabContent(animeSections, animeListFiltered, selectedGenre, onMovieClick)
-                                4 -> ProfileScreenContent(
+                                3 -> ProfileScreenContent(
                                     user = user,
                                     watching = watchingContent,
                                     saved = savedContent,
@@ -316,7 +313,7 @@ fun HomeScreen(
                                 selected = pagerState.currentPage == index,
                                 onClick = {
                                     coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
+                                        pagerState.scrollToPage(index)
                                     }
                                 }
                             )
@@ -368,6 +365,26 @@ fun HomeScreen(
                         TextButton(onClick = { showUpdateDialog = false }) {
                             Text("Más tarde", color = Color.Gray)
                         }
+                    }
+                },
+                containerColor = Color(0xFF1A1A1A),
+                titleContentColor = Color.White,
+                textContentColor = Color.LightGray
+            )
+        }
+
+        // Error Update Dialog
+        if (updateError != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.clearUpdateError() },
+                title = { Text("Error de actualización", fontWeight = FontWeight.Bold, color = Color.White) },
+                text = { Text(updateError ?: "", color = Color.LightGray) },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.clearUpdateError() },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Aceptar", color = Color.Black, fontWeight = FontWeight.Bold)
                     }
                 },
                 containerColor = Color(0xFF1A1A1A),

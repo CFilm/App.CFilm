@@ -86,6 +86,7 @@ class HomeViewModel @Inject constructor(
 
     val isDownloading = updateManager.isDownloading
     val downloadProgress = updateManager.downloadProgress
+    val updateError = updateManager.error
 
     val moviesListFiltered = combine(allContent, _selectedGenre) { list, genre ->
         list.filter { it.contentType == ContentType.MOVIE && (genre == null || it.genres.contains(genre)) }
@@ -93,10 +94,6 @@ class HomeViewModel @Inject constructor(
 
     val seriesListFiltered = combine(allContent, _selectedGenre) { list, genre ->
         list.filter { it.contentType == ContentType.TV && (genre == null || it.genres.contains(genre)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val animeListFiltered = combine(allContent, _selectedGenre) { list, genre ->
-        list.filter { it.contentType == ContentType.ANIME && (genre == null || it.genres.contains(genre)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val searchResults = combine(allContent, _searchQuery) { list, query ->
@@ -119,10 +116,6 @@ class HomeViewModel @Inject constructor(
 
     val seriesSections = allContent.map { list ->
         createCategorySections(list.filter { it.contentType == ContentType.TV }, "Series")
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val animeSections = allContent.map { list ->
-        createCategorySections(list.filter { it.contentType == ContentType.ANIME }, "Anime")
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun createSections(list: List<Movie>, watching: List<Movie>, trends: List<Movie>): List<HomeSection> {
@@ -166,6 +159,10 @@ class HomeViewModel @Inject constructor(
 
     fun startUpdate(url: String) {
         updateManager.downloadAndInstall(url)
+    }
+
+    fun clearUpdateError() {
+        updateManager.clearError()
     }
 
     fun showRewardedVideo(activity: Activity, placementName: String? = null, onReward: () -> Unit) {

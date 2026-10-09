@@ -409,6 +409,7 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDownloadUrl(serverName: String, fileId: String): String? = withContext(Dispatchers.IO) {
+        Log.d("StreamtapeApi", "getDownloadUrl called: serverName=$serverName, fileId=$fileId, login=$streamtapeLogin, keyLength=${streamtapeKey.length}")
         try {
             if (serverName.contains("Streamtape", true)) {
                 // Registro de vista silencioso para Streamtape para que no borren el video
@@ -426,17 +427,28 @@ class MovieRepositoryImpl @Inject constructor(
                 }
 
                 val tResponse = streamtapeApi.getDownloadTicket(fileId, streamtapeLogin, streamtapeKey)
-                val t = tResponse.result ?: return@withContext null
+                Log.d("StreamtapeApi", "getDownloadTicket response: status=${tResponse.status}, msg=${tResponse.msg}, result=${tResponse.result}")
+                val t = tResponse.result ?: run {
+                    Log.e("StreamtapeApi", "Ticket result is null for fileId=$fileId, login=$streamtapeLogin, keyLength=${streamtapeKey.length}")
+                    return@withContext null
+                }
                 delay(t.waitTime * 1000L + 200) 
                 val urlResponse = streamtapeApi.getDownloadLink(fileId, t.ticket)
+                Log.d("StreamtapeApi", "getDownloadLink response: status=${urlResponse.status}, msg=${urlResponse.msg}, result=${urlResponse.result}")
                 val url = urlResponse.result?.url
                 if (url != null) {
                     val finalUrl = if (url.startsWith("//")) "https:$url" else if (url.startsWith("/")) "https://streamtape.com$url" else url
+                    Log.d("StreamtapeApi", "Final download URL: $finalUrl")
                     return@withContext finalUrl
+                } else {
+                    Log.e("StreamtapeApi", "Download URL result is null")
                 }
             } else if (fileId.startsWith("http")) return@withContext fileId
             null
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { 
+            Log.e("StreamtapeApi", "Exception in getDownloadUrl: ${e.message}", e)
+            null 
+        }
     }
 
     override fun searchMovies(query: String): Flow<List<Movie>> = movieDao.searchMovies(query).map { entities ->

@@ -12,7 +12,6 @@ sealed class Screen(val route: String, val title: String = "", val icon: ImageVe
     object Home : Screen("home", "Inicio", Icons.Default.Home)
     object Movies : Screen("movies", "Películas", Icons.Default.Movie)
     object Series : Screen("series", "Series", Icons.Default.Tv)
-    object Anime : Screen("anime", "Anime", Icons.Default.PlayArrow)
     object Profile : Screen("profile", "Perfil", Icons.Default.Person)
     
     object Auth : Screen("auth") {

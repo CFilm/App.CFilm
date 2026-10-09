@@ -37,6 +37,10 @@ class UpdateManager @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    fun clearError() {
+        _error.value = null
+    }
+
     fun downloadAndInstall(url: String, fileName: String = "CFilm_Update.apk") {
         val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
         if (file.exists()) {
@@ -57,14 +61,16 @@ class UpdateManager @Inject constructor(
             _downloadProgress.value = 0f
             _error.value = null
 
-            trackProgress()
+            trackProgress(file)
 
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                     if (id == downloadId) {
                         checkDownloadStatus(file)
-                        context.unregisterReceiver(this)
+                        try {
+                            context.unregisterReceiver(this)
+                        } catch (_: Exception) {}
                     }
                 }
             }
@@ -85,34 +91,77 @@ class UpdateManager @Inject constructor(
         val query = DownloadManager.Query().setFilterById(downloadId)
         val cursor = downloadManager.query(query)
         if (cursor != null && cursor.moveToFirst()) {
-            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+            val status = if (statusIndex != -1) cursor.getInt(statusIndex) else -1
             if (status == DownloadManager.STATUS_SUCCESSFUL) {
                 _downloadProgress.value = 1f
                 _isDownloading.value = false
+                cursor.close()
                 installApk(file)
-            } else {
-                val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                return
+            } else if (status == DownloadManager.STATUS_FAILED) {
+                val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                val reason = if (reasonIndex != -1) cursor.getInt(reasonIndex) else -1
                 _error.value = "Descarga fallida (Código: $reason)"
                 _isDownloading.value = false
+                cursor.close()
+                return
             }
         }
         cursor?.close()
+        if (file.exists() && file.length() > 0) {
+            _downloadProgress.value = 1f
+            _isDownloading.value = false
+            installApk(file)
+        }
     }
 
-    private fun trackProgress() {
+    private fun trackProgress(file: File) {
         CoroutineScope(Dispatchers.IO).launch {
             while (_isDownloading.value) {
-                val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
+                val query = DownloadManager.Query().setFilterById(downloadId)
+                val cursor = downloadManager.query(query)
                 if (cursor != null && cursor.moveToFirst()) {
-                    val bytesDownloaded = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                    val bytesTotal = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    val status = if (statusIndex != -1) cursor.getInt(statusIndex) else -1
+
+                    if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                        _downloadProgress.value = 1f
+                        _isDownloading.value = false
+                        cursor.close()
+                        installApk(file)
+                        break
+                    } else if (status == DownloadManager.STATUS_FAILED) {
+                        val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                        val reason = if (reasonIndex != -1) cursor.getInt(reasonIndex) else -1
+                        _error.value = "Descarga fallida (Código: $reason)"
+                        _isDownloading.value = false
+                        cursor.close()
+                        break
+                    }
+
+                    val downloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                    val totalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                     
-                    if (bytesTotal > 0) {
-                        _downloadProgress.value = bytesDownloaded.toFloat() / bytesTotal.toFloat()
+                    if (downloadedIndex != -1 && totalIndex != -1) {
+                        val bytesDownloaded = cursor.getInt(downloadedIndex)
+                        val bytesTotal = cursor.getInt(totalIndex)
+                        
+                        if (bytesTotal > 0) {
+                            val progress = (bytesDownloaded.toFloat() / bytesTotal.toFloat()).coerceIn(0f, 1f)
+                            _downloadProgress.value = progress
+                            if (bytesDownloaded >= bytesTotal) {
+                                _downloadProgress.value = 1f
+                                _isDownloading.value = false
+                                cursor.close()
+                                installApk(file)
+                                break
+                            }
+                        }
                     }
                 }
                 cursor?.close()
-                delay(500)
+                delay(300)
             }
         }
     }
