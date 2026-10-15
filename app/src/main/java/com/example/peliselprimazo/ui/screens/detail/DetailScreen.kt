@@ -28,6 +28,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.viewinterop.AndroidView
+import android.view.ViewGroup
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +64,7 @@ fun DetailScreen(
     val sheetState = rememberModalBottomSheetState()
     var showEpisodeSheet by remember { mutableStateOf(false) }
     var showNoServerDialog by remember { mutableStateOf(false) }
+    var currentTrailerUrl by remember { mutableStateOf<String?>(null) }
     
     var showAuthDialog by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -111,10 +116,7 @@ fun DetailScreen(
                         onTerminadoToggle = { handleActionWithAuth { viewModel.toggleTerminado() } },
                         onVerDespuesToggle = { handleActionWithAuth { viewModel.toggleVerDespues() } },
                         onTrailerClick = { url ->
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
-                            } catch (_: Exception) { }
+                            currentTrailerUrl = url
                         },
                         onPlayButtonClick = {
                             if (state.movie.serverLinks.isEmpty()) {
@@ -169,6 +171,12 @@ fun DetailScreen(
                             titleContentColor = Color.White,
                             textContentColor = Color.LightGray
                         )
+                    }
+
+                    if (currentTrailerUrl != null) {
+                        TrailerDialog(trailerUrl = currentTrailerUrl!!) {
+                            currentTrailerUrl = null
+                        }
                     }
                 }
                 is DetailUiState.Error -> {
@@ -517,6 +525,141 @@ fun EpisodeSelectionSheet(movie: Movie, onEpisodeSelected: (String, String) -> U
                             }
                             Text(text = epTitleText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(text = "Temporada ${ep.season ?: "?"}", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun extractYouTubeId(url: String): String? {
+    return try {
+        val uri = Uri.parse(url)
+        when {
+            uri.host?.contains("youtu.be") == true -> uri.lastPathSegment
+            uri.host?.contains("youtube.com") == true -> uri.getQueryParameter("v")
+            else -> null
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+@Composable
+fun TrailerDialog(trailerUrl: String, onDismiss: () -> Unit) {
+    val videoId = remember(trailerUrl) { extractYouTubeId(trailerUrl) }
+    val context = LocalContext.current
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.88f)
+                    .clickable(enabled = false) {},
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFF121212),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                tonalElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Tráiler Oficial", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (videoId != null) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    android.webkit.WebView(ctx).apply {
+                                        layoutParams = ViewGroup.LayoutParams(
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                            ViewGroup.LayoutParams.MATCH_PARENT
+                                        )
+                                        settings.apply {
+                                            javaScriptEnabled = true
+                                            domStorageEnabled = true
+                                            mediaPlaybackRequiresUserGesture = false
+                                            loadWithOverviewMode = true
+                                            useWideViewPort = true
+                                            mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                            userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                                        }
+                                        setBackgroundColor(android.graphics.Color.BLACK)
+                                        webChromeClient = android.webkit.WebChromeClient()
+                                        webViewClient = object : android.webkit.WebViewClient() {
+                                            override fun shouldOverrideUrlLoading(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                                                return false
+                                            }
+                                        }
+                                        loadUrl("https://www.youtube.com/embed/$videoId?autoplay=1&playsinline=1&modestbranding=1&rel=0")
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text("No se pudo cargar el tráiler", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "¿El video muestra error de reproducción o restricción?",
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl)).apply {
+                                        setPackage("com.google.android.youtube")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl))
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth().height(42.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Ver directamente en YouTube", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
                 }

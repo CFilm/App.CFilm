@@ -290,6 +290,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private val _selectedAccentColor = MutableStateFlow<String?>(null)
+    val selectedAccentColor = _selectedAccentColor.asStateFlow()
+
+    fun setAccentColor(hex: String) {
+        _selectedAccentColor.value = hex
+    }
+
     init {
         viewModelScope.launch {
             allContent.collect { list ->

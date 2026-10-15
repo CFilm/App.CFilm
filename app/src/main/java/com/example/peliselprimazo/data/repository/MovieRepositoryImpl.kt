@@ -163,15 +163,38 @@ class MovieRepositoryImpl @Inject constructor(
                     return@withContext
                 }
 
-                val parsedItems = allFiles.map { pair ->
+                val resolvedItems = allFiles.map { pair ->
                     val info = parseFileName(pair.first)
-                    info to pair.second.copy(season = info.season, episode = info.episode, language = info.language)
+                    val link = pair.second.copy(season = info.season, episode = info.episode, language = info.language)
+                    
+                    val tmdbId = tmdbSemaphore.withPermit {
+                        try {
+                            if (tmdbApiKey.isNotBlank()) {
+                                if (info.isTv || info.isAnime) {
+                                    tmdbApi.searchTv(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
+                                        ?: tmdbApi.searchTv(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
+                                        ?: tmdbApi.searchTv(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
+                                } else {
+                                    tmdbApi.searchMovie(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
+                                        ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
+                                        ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
+                                }
+                            } else null
+                        } catch (_: Exception) { null }
+                    }
+
+                    Triple(info, link, tmdbId)
                 }
 
-                val grouped = parsedItems.groupBy { pair ->
-                    val info = pair.first
-                    val key = info.cleanTitle.lowercase().trim()
-                    if (info.isTv || info.isAnime) "tv|$key" else "movie|$key|${info.year ?: "unknown"}"
+                val grouped = resolvedItems.groupBy { triple ->
+                    val tmdbId = triple.third
+                    val info = triple.first
+                    if (tmdbId != null) {
+                        "tmdb|$tmdbId"
+                    } else {
+                        val key = info.cleanTitle.lowercase().trim()
+                        if (info.isTv || info.isAnime) "tv|$key" else "movie|$key|${info.year ?: "unknown"}"
+                    }
                 }
 
                 val activeMovieIds = mutableSetOf<Int>()
@@ -385,12 +408,23 @@ class MovieRepositoryImpl @Inject constructor(
         primaryTitle: String,
         originalTitle: String?,
         altTitles: TmdbAlternativeTitlesResponse?,
-        fallbackTitle: String
+        fallbackTitle: String,
+        isAnime: Boolean
     ): String {
+        val allAlts = (altTitles?.results ?: emptyList()) + (altTitles?.titles ?: emptyList())
+
+        if (isAnime) {
+            val romaji = allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
+                ?: allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
+                ?: allAlts.find { (it.isoCountry?.equals("US", ignoreCase = true) == true || it.isoCountry?.equals("JP", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
+            if (!romaji.isNullOrBlank() && !containsJapaneseChars(romaji)) {
+                return romaji
+            }
+        }
+
         if (!containsJapaneseChars(primaryTitle)) {
             return primaryTitle
         }
-        val allAlts = (altTitles?.results ?: emptyList()) + (altTitles?.titles ?: emptyList())
         val romajiAlt = allAlts.find { (it.type?.contains("Romaji", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
             ?: allAlts.find { (it.type?.contains("Romaji", ignoreCase = true) == true) && !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
             ?: allAlts.find { (it.isoCountry?.equals("US", ignoreCase = true) == true || it.isoCountry?.equals("JP", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
@@ -423,7 +457,7 @@ class MovieRepositoryImpl @Inject constructor(
             
             if (info.isTv || info.isAnime) {
                 val details = tmdbApi.getTvDetails(id)
-                val displayTitle = selectRomajiOrBestTitle(details.name, details.originalName, details.alternativeTitles, info.cleanTitle)
+                val displayTitle = selectRomajiOrBestTitle(details.name, details.originalName, details.alternativeTitles, info.cleanTitle, info.isAnime)
                 val altTitlesList = (details.alternativeTitles?.results ?: emptyList()) + (details.alternativeTitles?.titles ?: emptyList())
                 val altNamesString = altTitlesList.mapNotNull { it.title ?: it.name }.distinct().take(10).joinToString(", ")
                 val enrichedOverview = if (altNamesString.isNotBlank()) {
@@ -446,7 +480,7 @@ class MovieRepositoryImpl @Inject constructor(
                 )
             } else {
                 val details = tmdbApi.getMovieDetails(id)
-                val displayTitle = selectRomajiOrBestTitle(details.title, details.originalTitle, details.alternativeTitles, info.cleanTitle)
+                val displayTitle = selectRomajiOrBestTitle(details.title, details.originalTitle, details.alternativeTitles, info.cleanTitle, info.isAnime)
                 val altTitlesList = (details.alternativeTitles?.results ?: emptyList()) + (details.alternativeTitles?.titles ?: emptyList())
                 val altNamesString = altTitlesList.mapNotNull { it.title ?: it.name }.distinct().take(10).joinToString(", ")
                 val enrichedOverview = if (altNamesString.isNotBlank()) {

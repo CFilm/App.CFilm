@@ -9,6 +9,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -747,6 +748,53 @@ fun ProfileMainContent(
                     }
                 }
             }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(text = "Color de Acento de la App", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF1A1A1A),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val colors = listOf(
+                        "Rojo" to "#E50914",
+                        "Azul" to "#00D2FF",
+                        "Verde" to "#00E676",
+                        "Dorado" to "#FFD700",
+                        "Morado" to "#9D50BB"
+                    )
+                    val currentAccent by viewModel.selectedAccentColor.collectAsState()
+
+                    colors.forEach { (name, hex) ->
+                        val isSelected = currentAccent == hex || (currentAccent == null && hex == "#E50914")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable { viewModel.setAccentColor(hex) }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(hex)))
+                                    .let {
+                                        if (isSelected) it.border(2.dp, Color.White, CircleShape) else it
+                                    }
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(name, color = if (isSelected) Color.White else Color.Gray, fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         item {

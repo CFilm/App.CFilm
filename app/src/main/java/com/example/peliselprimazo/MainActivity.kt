@@ -65,8 +65,9 @@ class MainActivity : FragmentActivity() {
         setContent {
             val homeViewModel: HomeViewModel = hiltViewModel()
             val updateConfig by homeViewModel.updateConfig.collectAsState()
+            val userAccent by homeViewModel.selectedAccentColor.collectAsState()
             
-            val primaryOverride = updateConfig?.visualFlags?.get("ui_primary_color")
+            val primaryOverride = userAccent ?: updateConfig?.visualFlags?.get("ui_primary_color")
             val secondaryOverride = updateConfig?.visualFlags?.get("ui_secondary_color")
 
             CFilmTheme(
