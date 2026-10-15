@@ -21,8 +21,13 @@ class PelisApp : Application(), ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
-            .memoryCache { MemoryCache.Builder(this).maxSizePercent(0.25).build() }
-            .diskCache { DiskCache.Builder().directory(this.cacheDir.resolve("image_cache")).maxSizePercent(0.02).build() }
+            .memoryCache { MemoryCache.Builder(this).maxSizePercent(0.35).build() }
+            .diskCache { 
+                DiskCache.Builder()
+                    .directory(this.cacheDir.resolve("image_cache"))
+                    .maxSizeBytes(250 * 1024 * 1024L)
+                    .build() 
+            }
             .crossfade(true)
             .build()
     }

@@ -96,9 +96,53 @@ class HomeViewModel @Inject constructor(
         list.filter { it.contentType == ContentType.TV && (genre == null || it.genres.contains(genre)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val searchResults = combine(allContent, _searchQuery) { list, query ->
-        if (query.isBlank()) emptyList()
-        else list.filter { it.title.contains(query, ignoreCase = true) }
+    val searchTypeFilter = MutableStateFlow<String>("ALL")
+    val searchGenreFilter = MutableStateFlow<String?>(null)
+    val searchRatingFilter = MutableStateFlow<Double?>(null)
+    val searchYearFilter = MutableStateFlow<String?>(null)
+
+    val searchResults = combine(
+        allContent,
+        _searchQuery,
+        searchTypeFilter,
+        searchGenreFilter,
+        searchRatingFilter,
+        searchYearFilter
+    ) { flows: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
+        val list = flows[0] as List<Movie>
+        val query = flows[1] as String
+        val type = flows[2] as String
+        val genre = flows[3] as String?
+        val rating = flows[4] as Double?
+        val year = flows[5] as String?
+
+        var filtered = list
+
+        if (query.isNotBlank()) {
+            filtered = filtered.filter { movie ->
+                movie.title.contains(query, ignoreCase = true) ||
+                movie.overview.contains(query, ignoreCase = true)
+            }
+        }
+
+        if (type != "ALL") {
+            filtered = filtered.filter { it.contentType.name.equals(type, ignoreCase = true) }
+        }
+
+        if (genre != null && genre != "ALL") {
+            filtered = filtered.filter { m -> m.genres.any { g -> g.contains(genre, ignoreCase = true) } }
+        }
+
+        if (rating != null && rating > 0.0) {
+            filtered = filtered.filter { it.rating >= rating }
+        }
+
+        if (year != null && year != "ALL") {
+            filtered = filtered.filter { it.year == year || (it.releaseDate != null && it.releaseDate.startsWith(year)) }
+        }
+
+        filtered
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val totalHours = allContent.map { list ->
@@ -121,9 +165,31 @@ class HomeViewModel @Inject constructor(
     private fun createSections(list: List<Movie>, watching: List<Movie>, trends: List<Movie>): List<HomeSection> {
         if (list.isEmpty()) return emptyList()
         val watchLater = list.filter { it.isWatchLater }
+
+        // Algoritmo de Recomendación Personalizada para "✨ Para Ti"
+        val userLikedOrWatched = list.filter { it.isLiked || it.isSaved || it.isWatching }
+        val favoriteGenres = userLikedOrWatched.flatMap { it.genres }.groupingBy { it }.eachCount()
+
+        val personalizedForYou = if (favoriteGenres.isNotEmpty()) {
+            list.filter { !it.isFinished && !it.isWatching }
+                .sortedByDescending { movie ->
+                    var score = movie.rating
+                    movie.genres.forEach { genre ->
+                        val count = favoriteGenres[genre] ?: 0
+                        score += count * 2.0
+                    }
+                    if (movie.isWatchLater) score += 3.0
+                    score
+                }
+                .take(15)
+                .ifEmpty { list.shuffled().take(15) }
+        } else {
+            list.sortedByDescending { it.rating }.take(15)
+        }
+
         return buildList {
             if (watching.isNotEmpty()) add(HomeSection("🍿 Continuar Viendo", watching.take(12), isWatchingSection = true))
-            add(HomeSection("✨ Para Ti", list.shuffled().take(15)))
+            add(HomeSection("✨ Para Ti", personalizedForYou))
             if (trends.isNotEmpty()) add(HomeSection("🔥 Tendencias Globales", trends)) else add(HomeSection("🔥 Tendencias Globales", list.sortedByDescending { it.rating }.take(15)))
             add(HomeSection("🚀 Estrenos Exclusivos", list.sortedByDescending { it.releaseDate }.take(15)))
             add(HomeSection("⭐ Los Más Valorados", list.sortedByDescending { it.rating }.take(15)))
@@ -225,6 +291,13 @@ class HomeViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            allContent.collect { list ->
+                if (list.isNotEmpty()) {
+                    _isLoading.value = false
+                }
+            }
+        }
         refreshData(isFirstLoad = true)
         syncConfig()
     }
@@ -259,7 +332,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             if (isFirstLoad && allContent.value.isEmpty()) {
                 _isLoading.value = true
-            } else {
+            } else if (!isFirstLoad) {
                 _isRefreshing.value = true
             }
             try {
@@ -300,7 +373,18 @@ class HomeViewModel @Inject constructor(
         if (!active) {
             _searchQuery.value = ""
             _selectedGenre.value = null
+            resetSearchFilters()
         }
+    }
+    fun setSearchTypeFilter(type: String) { searchTypeFilter.value = type }
+    fun setSearchGenreFilter(genre: String?) { searchGenreFilter.value = genre }
+    fun setSearchRatingFilter(rating: Double?) { searchRatingFilter.value = rating }
+    fun setSearchYearFilter(year: String?) { searchYearFilter.value = year }
+    fun resetSearchFilters() {
+        searchTypeFilter.value = "ALL"
+        searchGenreFilter.value = null
+        searchRatingFilter.value = null
+        searchYearFilter.value = null
     }
     fun onGenreChange(genre: String?) { _selectedGenre.value = genre }
     fun clearSearchHistory() { viewModelScope.launch { repository.clearSearchHistory() } }

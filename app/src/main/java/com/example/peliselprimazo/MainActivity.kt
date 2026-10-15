@@ -41,12 +41,13 @@ import com.example.peliselprimazo.ui.screens.home.HomeViewModel
 import com.example.peliselprimazo.ui.screens.player.PlayerScreen
 import com.example.peliselprimazo.ui.screens.player.PlayerViewModel
 import com.example.peliselprimazo.ui.theme.CFilmTheme
+import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.URLEncoder
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var adsManager: AdsManager

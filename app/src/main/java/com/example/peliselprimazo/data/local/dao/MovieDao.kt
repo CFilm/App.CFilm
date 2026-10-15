@@ -10,6 +10,9 @@ interface MovieDao {
     @Query("SELECT * FROM movies ORDER BY title ASC")
     fun getAllMovies(): Flow<List<MovieEntity>>
 
+    @Query("SELECT * FROM movies")
+    suspend fun getAllMoviesSync(): List<MovieEntity>
+
     @Query("SELECT * FROM movies ORDER BY lastUpdated DESC")
     fun getPagedMovies(): PagingSource<Int, MovieEntity>
 

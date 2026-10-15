@@ -170,6 +170,7 @@ fun HomeScreen(
                         query = searchQuery,
                         history = searchHistory,
                         results = searchResults,
+                        viewModel = viewModel,
                         onQueryChange = { viewModel.onSearchQueryChange(it) },
                         onMovieClick = onMovieClick,
                         onClearHistory = { viewModel.clearSearchHistory() }
@@ -471,12 +472,118 @@ fun SearchContent(
     query: String,
     history: List<String>,
     results: List<Movie>,
+    viewModel: HomeViewModel,
     onQueryChange: (String) -> Unit,
     onMovieClick: (Int) -> Unit,
     onClearHistory: () -> Unit
 ) {
+    val searchType by viewModel.searchTypeFilter.collectAsState()
+    val searchGenre by viewModel.searchGenreFilter.collectAsState()
+    val searchRating by viewModel.searchRatingFilter.collectAsState()
+    val searchYear by viewModel.searchYearFilter.collectAsState()
+
+    val hasActiveFilters = searchType != "ALL" || searchGenre != null || searchRating != null || searchYear != null
+
     Column(modifier = Modifier.fillMaxSize().padding(top = 80.dp)) {
-        if (query.isBlank()) {
+        // Barra de Filtros Avanzados
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            item {
+                FilterChip(
+                    selected = searchType == "ALL",
+                    onClick = { viewModel.setSearchTypeFilter("ALL") },
+                    label = { Text("Todos") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+            item {
+                FilterChip(
+                    selected = searchType == "MOVIE",
+                    onClick = { viewModel.setSearchTypeFilter(if (searchType == "MOVIE") "ALL" else "MOVIE") },
+                    label = { Text("🎬 Películas") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+            item {
+                FilterChip(
+                    selected = searchType == "TV",
+                    onClick = { viewModel.setSearchTypeFilter(if (searchType == "TV") "ALL" else "TV") },
+                    label = { Text("📺 Series") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+
+            item {
+                FilterChip(
+                    selected = searchRating == 7.0,
+                    onClick = { viewModel.setSearchRatingFilter(if (searchRating == 7.0) null else 7.0) },
+                    label = { Text("⭐ 7.0+") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+            item {
+                FilterChip(
+                    selected = searchRating == 8.0,
+                    onClick = { viewModel.setSearchRatingFilter(if (searchRating == 8.0) null else 8.0) },
+                    label = { Text("⭐ 8.0+") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+
+            val years = listOf("2024", "2023", "2022", "2021", "2020")
+            items(years) { y ->
+                FilterChip(
+                    selected = searchYear == y,
+                    onClick = { viewModel.setSearchYearFilter(if (searchYear == y) null else y) },
+                    label = { Text(y) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+
+            val genres = listOf("Acción", "Comedia", "Terror", "Ciencia Ficción", "Drama", "Suspenso", "Aventura", "Animación", "Fantasía")
+            items(genres) { g ->
+                FilterChip(
+                    selected = searchGenre == g,
+                    onClick = { viewModel.setSearchGenreFilter(if (searchGenre == g) null else g) },
+                    label = { Text(g) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = Color.Black
+                    )
+                )
+            }
+
+            if (hasActiveFilters) {
+                item {
+                    TextButton(onClick = { viewModel.resetSearchFilters() }) {
+                        Text("Limpiar filtros", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        if (query.isBlank() && !hasActiveFilters) {
             if (history.isNotEmpty()) {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Búsquedas recientes", color = Color.White, fontWeight = FontWeight.Bold)
@@ -496,7 +603,7 @@ fun SearchContent(
                 }
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Busca tus películas o series favoritas", color = Color.Gray)
+                    Text("Busca tus películas o series favoritas por nombre, género o año", color = Color.Gray)
                 }
             }
         } else {
@@ -826,6 +933,23 @@ fun MovieCardItem(movie: Movie, onClick: (Int) -> Unit, width: androidx.compose.
             Box {
                 AsyncImage(model = ImageRequest.Builder(context).data(movie.posterUrl).crossfade(true).diskCachePolicy(CachePolicy.ENABLED).memoryCachePolicy(CachePolicy.ENABLED).build(), contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 if (movie.rating > 0) { Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp)) { Text(text = String.format(Locale.US, "%.1f", movie.rating), color = Color(0xFFFFD700), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) } }
+                if (movie.totalDuration > 0 && movie.lastPosition > 0) {
+                    val progressRatio = (movie.lastPosition.toFloat() / movie.totalDuration.toFloat()).coerceIn(0f, 1f)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(Color.Gray.copy(alpha = 0.5f))
+                            .align(Alignment.BottomStart)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressRatio)
+                                .fillMaxHeight()
+                                .background(Color.Red)
+                        )
+                    }
+                }
             }
         }
         Text(text = movie.title, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp, start = 2.dp))

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -58,6 +59,7 @@ fun DetailScreen(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState()
     var showEpisodeSheet by remember { mutableStateOf(false) }
+    var showNoServerDialog by remember { mutableStateOf(false) }
     
     var showAuthDialog by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -115,7 +117,9 @@ fun DetailScreen(
                             } catch (_: Exception) { }
                         },
                         onPlayButtonClick = {
-                            if (state.movie.contentType == ContentType.MOVIE) {
+                            if (state.movie.serverLinks.isEmpty()) {
+                                showNoServerDialog = true
+                            } else if (state.movie.contentType == ContentType.MOVIE) {
                                 val firstLink = state.movie.serverLinks.firstOrNull()
                                 if (firstLink != null) {
                                     handleActionWithAuth {
@@ -146,6 +150,25 @@ fun DetailScreen(
                                 }
                             )
                         }
+                    }
+
+                    if (showNoServerDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showNoServerDialog = false },
+                            title = { Text("Sin Servidor Disponible", fontWeight = FontWeight.Bold, color = Color.White) },
+                            text = { Text("Este contenido actualmente no cuenta con un servidor activo. Estará disponible muy pronto cuando re-suban el servidor.", color = Color.LightGray) },
+                            confirmButton = {
+                                Button(
+                                    onClick = { showNoServerDialog = false },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Aceptar", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            containerColor = Color(0xFF1A1A1A),
+                            titleContentColor = Color.White,
+                            textContentColor = Color.LightGray
+                        )
                     }
                 }
                 is DetailUiState.Error -> {
@@ -290,6 +313,24 @@ fun InfoSection(movie: Movie, onTrailerClick: (String) -> Unit) {
                         Spacer(Modifier.width(4.dp))
                         Text("TRÁILER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     }
+                }
+            }
+        }
+
+        if (movie.serverLinks.isEmpty()) {
+            Surface(
+                color = Color.Red.copy(alpha = 0.2f),
+                border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Sin Servidor Disponible", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -452,7 +493,7 @@ fun EpisodeSelectionSheet(movie: Movie, onEpisodeSelected: (String, String) -> U
                     Row(modifier = Modifier.height(70.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.width(120.dp).fillMaxHeight()) {
                             AsyncImage(
-                                model = movie.backdropUrl ?: movie.posterUrl,
+                                model = ep.thumbnailUri ?: movie.backdropUrl ?: movie.posterUrl,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -462,8 +503,19 @@ fun EpisodeSelectionSheet(movie: Movie, onEpisodeSelected: (String, String) -> U
                             }
                         }
                         Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.padding(end = 12.dp)) {
-                            Text(text = "Episodio ${ep.episode ?: "?"}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Column(modifier = Modifier.padding(end = 12.dp).weight(1f)) {
+                            val epName = ep.episodeTitle
+                            val isGeneric = epName.isNullOrBlank() || 
+                                            epName.equals("episodio ${ep.episode}", ignoreCase = true) || 
+                                            epName.equals("episode ${ep.episode}", ignoreCase = true) ||
+                                            epName.equals("episodio", ignoreCase = true)
+
+                            val epTitleText = if (!isGeneric) {
+                                "Episodio ${ep.episode}: $epName"
+                            } else {
+                                "Episodio ${ep.episode ?: "?"}"
+                            }
+                            Text(text = epTitleText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(text = "Temporada ${ep.season ?: "?"}", color = Color.Gray, fontSize = 12.sp)
                         }
                     }

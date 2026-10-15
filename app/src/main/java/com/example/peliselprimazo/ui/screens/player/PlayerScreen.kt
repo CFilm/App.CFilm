@@ -14,6 +14,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,10 +50,12 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import androidx.mediarouter.app.MediaRouteButton
 import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.ui.components.ParticleLoading
+import com.google.android.gms.cast.framework.CastButtonFactory
 import kotlinx.coroutines.delay
 
 @SuppressLint("SourceLockedOrientationActivity")
@@ -256,6 +260,10 @@ fun NativePlayer(
     var isDraggingLeft by remember { mutableStateOf(false) }
     var isDraggingRight by remember { mutableStateOf(false) }
 
+    var autoNextCanceled by remember { mutableStateOf(false) }
+    var autoNextTriggered by remember { mutableStateOf(false) }
+    var autoNextCountdown by remember { mutableIntStateOf(6) }
+
     val exoPlayer = remember(context) {
         ExoPlayer.Builder(context).build()
     }
@@ -265,6 +273,9 @@ fun NativePlayer(
         exoPlayer.clearMediaItems()
         currentPosition = 0L
         duration = 0L
+        autoNextCanceled = false
+        autoNextTriggered = false
+        autoNextCountdown = 6
         val dataSourceFactory = DefaultHttpDataSource.Factory().apply {
             if (headers.isNotEmpty()) {
                 setDefaultRequestProperties(headers)
@@ -298,6 +309,25 @@ fun NativePlayer(
         if (showBrightnessOverlay) {
             delay(2000)
             showBrightnessOverlay = false
+        }
+    }
+
+    // Detectar últimos 90 segundos (1.5 min) donde típicamente inician los créditos
+    val remainingMillis = if (duration > 0) duration - currentPosition else Long.MAX_VALUE
+    val isNearEnd = isSeries && onNext != null && duration > 60000L && remainingMillis in 1L..90000L && !autoNextCanceled
+
+    LaunchedEffect(isNearEnd) {
+        if (isNearEnd && !autoNextTriggered && !autoNextCanceled) {
+            autoNextCountdown = 6
+            while (autoNextCountdown > 0 && !autoNextCanceled && !autoNextTriggered) {
+                delay(1000)
+                autoNextCountdown--
+            }
+            if (autoNextCountdown <= 0 && !autoNextCanceled && !autoNextTriggered) {
+                autoNextTriggered = true
+                exoPlayer.stop()
+                onNext?.invoke()
+            }
         }
     }
 
@@ -484,6 +514,59 @@ fun NativePlayer(
             }
         }
 
+        // Card Saltar Créditos / Autoplay Siguiente Episodio
+        AnimatedVisibility(
+            visible = isNearEnd && !autoNextTriggered,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 80.dp, end = 24.dp)
+        ) {
+            Surface(
+                color = Color(0xFF1A1A1A).copy(alpha = 0.95f),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Siguiente episodio $autoNextCountdown s...",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                autoNextTriggered = true
+                                exoPlayer.stop()
+                                onNext?.invoke()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Saltar Créditos", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        TextButton(
+                            onClick = { autoNextCanceled = true },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text("Cancelar", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
         // Animated Controls Overlay
         AnimatedVisibility(
             visible = showControls,
@@ -540,6 +623,92 @@ fun NativePlayer(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+
+                    // 1. Selector de Velocidad de Reproducción
+                    var currentSpeed by remember { mutableFloatStateOf(1.0f) }
+                    var showSpeedMenu by remember { mutableStateOf(false) }
+
+                    Box {
+                        Surface(
+                            onClick = { showSpeedMenu = true },
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Speed,
+                                    contentDescription = "Velocidad",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${currentSpeed}x",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = showSpeedMenu,
+                            onDismissRequest = { showSpeedMenu = false },
+                            modifier = Modifier.background(Color(0xFF1A1A1A))
+                        ) {
+                            val speeds = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+                            speeds.forEach { speed ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (speed == 1.0f) "1.0x (Normal)" else "${speed}x",
+                                            color = if (speed == currentSpeed) MaterialTheme.colorScheme.primary else Color.White,
+                                            fontWeight = if (speed == currentSpeed) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    onClick = {
+                                        showSpeedMenu = false
+                                        currentSpeed = speed
+                                        exoPlayer.setPlaybackSpeed(speed)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // 2. Botón Transmitir a TV (Google Cast)
+                    Box(
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AndroidView(
+                            factory = { ctx ->
+                                try {
+                                    MediaRouteButton(ctx).apply {
+                                        try {
+                                            CastButtonFactory.setUpMediaRouteButton(ctx, this)
+                                        } catch (e: Exception) {
+                                            Log.e("GoogleCast", "Error setting up Cast button: ${e.message}")
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("GoogleCast", "Error creating MediaRouteButton: ${e.message}")
+                                    android.view.View(ctx)
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     // Selector de Idiomas
                     val availableLanguages = remember(currentLink, allMovieLinks) {

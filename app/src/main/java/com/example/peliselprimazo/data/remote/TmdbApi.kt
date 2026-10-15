@@ -25,15 +25,22 @@ interface TmdbApi {
     suspend fun getMovieDetails(
         @Path("movie_id") movieId: Int,
         @Query("language") language: String = "es-MX",
-        @Query("append_to_response") append: String = "videos,credits"
+        @Query("append_to_response") append: String = "videos,credits,alternative_titles"
     ): TmdbMovieDetail
 
     @GET("tv/{tv_id}")
     suspend fun getTvDetails(
         @Path("tv_id") tvId: Int,
         @Query("language") language: String = "es-MX",
-        @Query("append_to_response") append: String = "videos,credits"
+        @Query("append_to_response") append: String = "videos,credits,alternative_titles"
     ): TmdbTvDetail
+
+    @GET("tv/{tv_id}/season/{season_number}")
+    suspend fun getTvSeasonDetails(
+        @Path("tv_id") tvId: Int,
+        @Path("season_number") seasonNumber: Int,
+        @Query("language") language: String = "es-MX"
+    ): TmdbSeasonDetail
 
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"

@@ -3,6 +3,7 @@
     <style name="Theme.PelisElPrimazo" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:statusBarColor">#000000</item>
         <item name="android:windowBackground">#000000</item>
+        <item name="mediaRouteTheme">@style/Theme.MediaRouter</item>
     </style>
 
     <!-- Post-splash theme -->
