@@ -39,18 +39,17 @@
     <!-- Header / Navbar -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <img src="logo.png" alt="CFilm Logo" class="w-11 h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20">
+            <a href="#" class="flex items-center space-x-3 group">
+                <img src="logo.png" alt="CFilm Logo" class="w-11 h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20 group-hover:scale-105 transition-transform">
                 <span class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">CFilm</span>
-            </div>
+            </a>
             <div class="flex items-center space-x-4">
                 <a href="#features" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Características</a>
                 <a href="#gallery" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Contenido</a>
-                <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo" target="_blank" class="text-zinc-400 hover:text-white transition-colors text-lg">
-                    <i class="fa-brands fa-github"></i>
-                </a>
-                <a href="#download" class="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40">
-                    Descargar App
+                <a href="#social" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Comunidad</a>
+                <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 flex items-center space-x-2">
+                    <i class="fa-solid fa-download text-xs"></i>
+                    <span>Descargar App</span>
                 </a>
             </div>
         </div>
@@ -91,30 +90,30 @@
                     </div>
                 </div>
 
-                <!-- Hero Visual Logo Showcase -->
+                <!-- Hero Visual Logo Showcase (Clickable for Download) -->
                 <div class="lg:col-span-5 flex justify-center">
-                    <div class="relative w-full max-w-sm flex items-center justify-center">
-                        <div class="absolute inset-0 bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 rounded-3xl blur-3xl transform rotate-3"></div>
-                        <div class="relative bg-zinc-900/90 border border-zinc-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center">
-                            <img src="logo.png" alt="CFilm App Icon" class="w-36 h-36 rounded-2xl object-cover shadow-2xl shadow-purple-500/40 border border-purple-500/30 mb-6 transform hover:scale-105 transition-transform duration-300">
-                            <h2 class="text-2xl font-extrabold text-white mb-1">CFilm Player</h2>
-                            <p class="text-xs text-zinc-400 mb-4">Tu centro multimedia personal</p>
-                            <div class="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-400 text-xs font-semibold">
-                                <i class="fa-solid fa-circle-check text-[10px]"></i>
-                                <span>Servidor Online / v2.4.12</span>
+                    <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="relative w-full max-w-sm flex items-center justify-center group cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 rounded-3xl blur-3xl transform rotate-3 group-hover:scale-105 transition-transform"></div>
+                        <div class="relative bg-zinc-900/90 border border-zinc-800 group-hover:border-purple-500/50 rounded-3xl p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center transition-all">
+                            <img src="logo.png" alt="CFilm App Icon" class="w-36 h-36 rounded-2xl object-cover shadow-2xl shadow-purple-500/40 border border-purple-500/30 mb-6 transform group-hover:scale-105 transition-transform duration-300">
+                            <h2 class="text-2xl font-extrabold text-white mb-1 group-hover:text-purple-400 transition-colors">CFilm Player</h2>
+                            <p class="text-xs text-zinc-400 mb-4">CFilm player, tu centro multimedia personal</p>
+                            <div class="flex items-center space-x-2 bg-purple-600/20 border border-purple-500/30 px-4 py-2 rounded-xl text-purple-300 text-xs font-bold group-hover:bg-purple-600 group-hover:text-white transition-all shadow-md">
+                                <i class="fa-solid fa-download"></i>
+                                <span>¡Toca para Descargar!</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Auto-Scrolling Content Gallery (Movies, Series, Anime) -->
+    <!-- Auto-Scrolling Content Gallery (Movies, Series, Anime with guaranteed Unsplash Cinematic & TMDB posters) -->
     <section id="gallery" class="py-16 overflow-hidden bg-zinc-950/60 border-y border-zinc-900">
         <div class="text-center max-w-2xl mx-auto mb-10 px-6">
-            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Explora nuestro catálogo en constante expansión</h2>
-            <p class="text-zinc-400 text-sm">Miles de títulos en alta definición listos para reproducir al instante.</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Explora nuestro catálogo en alta definición</h2>
+            <p class="text-zinc-400 text-sm">Películas, series y animes actualizados al instante.</p>
         </div>
 
         <!-- Row 1: Marquee Left -->
@@ -122,41 +121,41 @@
             <div class="flex space-x-4 animate-marquee whitespace-nowrap min-w-max">
                 <!-- Posters -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Cinematic">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SciFi">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Action">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
                 </div>
-                <!-- Duplicate for infinite loop effect -->
+                <!-- Duplicate for loop -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
-                </div>
-                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Cinematic">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SciFi">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Action">
+                </div>
+                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
                 </div>
             </div>
         </div>
@@ -166,41 +165,41 @@
             <div class="flex space-x-4 animate-marquee-reverse whitespace-nowrap min-w-max">
                 <!-- Posters -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/luOa6lUUx1hS1y5g4GfVd8WjKx4.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/wx1JwgvCj8VSkAbVqnXv4d4h2zY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8akTvrJl3APL1Dn.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/pFlaoHW4DJHeWVtADnyhQnSi07R.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
-                <!-- Duplicate for infinite loop effect -->
+                <!-- Duplicate for loop -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
-                </div>
-                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/luOa6lUUx1hS1y5g4GfVd8WjKx4.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/wx1JwgvCj8VSkAbVqnXv4d4h2zY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8akTvrJl3APL1Dn.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/pFlaoHW4DJHeWVtADnyhQnSi07R.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                </div>
+                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
                 </div>
             </div>
         </div>
@@ -272,6 +271,43 @@
         </div>
     </section>
 
+    <!-- Social Media / Community Section -->
+    <section id="social" class="py-20 bg-zinc-950 border-t border-zinc-900 text-center">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-4 text-white">Únete a nuestra comunidad</h2>
+            <p class="text-zinc-400 text-sm sm:text-base mb-10">Síguenos en nuestras redes sociales oficiales para enterarte de estrenos, novedades y actualizaciones.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <!-- TikTok -->
+                <a href="https://tiktok.com/@cfilm.1" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-purple-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
+                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-purple-600 transition-all shadow-lg">
+                        <i class="fa-brands fa-tiktok"></i>
+                    </div>
+                    <span class="font-bold text-white mb-1">TikTok</span>
+                    <span class="text-xs text-purple-400 font-mono">@cfilm.1</span>
+                </a>
+
+                <!-- Facebook -->
+                <a href="https://facebook.com" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-blue-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
+                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-blue-600 transition-all shadow-lg">
+                        <i class="fa-brands fa-facebook-f"></i>
+                    </div>
+                    <span class="font-bold text-white mb-1">Facebook</span>
+                    <span class="text-xs text-blue-400 font-mono">AnimeNexus</span>
+                </a>
+
+                <!-- YouTube -->
+                <a href="https://youtube.com/@cfilm.anime.en.corto.1" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-red-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
+                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-red-600 transition-all shadow-lg">
+                        <i class="fa-brands fa-youtube"></i>
+                    </div>
+                    <span class="font-bold text-white mb-1">YouTube</span>
+                    <span class="text-xs text-red-400 font-mono">@cfilm.anime.en.corto.1</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="py-12 border-t border-zinc-900 text-center text-sm text-zinc-500">
         <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
@@ -279,8 +315,8 @@
                 <span class="font-bold text-zinc-300">CFilm</span>
                 <span>© 2026. Todos los derechos reservados.</span>
             </div>
-            <div class="flex items-center space-x-6">
-                <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo" target="_blank" class="hover:text-zinc-300 transition-colors">GitHub Repository</a>
+            <div class="flex items-center space-x-6 text-xs text-zinc-400">
+                <span>Plataforma de Streaming Personal</span>
             </div>
         </div>
     </footer>
