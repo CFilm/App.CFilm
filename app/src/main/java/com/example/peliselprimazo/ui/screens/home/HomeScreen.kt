@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.peliselprimazo.ui.components.*
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -78,6 +79,7 @@ fun HomeScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val isPreloading by viewModel.isPreloading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedGenre by viewModel.selectedGenre.collectAsState()
@@ -158,6 +160,33 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        if (uiState is HomeUiState.Error) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .zIndex(20f)
+                    .background(Color.Red.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Error de red o carga: ${(uiState as HomeUiState.Error).message}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { viewModel.refreshData(isFirstLoad = true) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Text("Inténtalo de nuevo", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
         
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -935,71 +964,5 @@ fun CategoryTabContent(sections: List<HomeSection>, filteredList: List<Movie>, s
                 }
             }
         }
-    }
-}
-
-@Composable
-fun WatchingCardItem(movie: Movie, onClick: () -> Unit) {
-    Column(modifier = Modifier.width(200.dp).clickable { onClick() }) {
-        Card(modifier = Modifier.height(110.dp).fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
-            Box {
-                AsyncImage(model = movie.backdropUrl ?: movie.posterUrl, contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
-                Icon(imageVector = Icons.Default.PlayCircleOutline, contentDescription = null, modifier = Modifier.size(36.dp).align(Alignment.Center), tint = Color.White)
-                if (movie.totalDuration > 0) {
-                    val progressRatio = movie.lastPosition.toFloat() / movie.totalDuration.toFloat()
-                    Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(Color.Gray.copy(alpha = 0.5f)).align(Alignment.BottomStart)) {
-                        Box(modifier = Modifier.fillMaxWidth(progressRatio.coerceIn(0f, 1f)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
-                    }
-                }
-            }
-        }
-        Text(text = movie.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
-    }
-}
-
-@Composable
-fun VerticalMovieGrid(movies: List<Movie>, onMovieClick: (Int) -> Unit, topPadding: androidx.compose.ui.unit.Dp = 80.dp) {
-    LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = topPadding, start = 8.dp, end = 8.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(movies, key = { it.id }) { movie -> MovieCardItem(movie, { onMovieClick(it) }) }
-    }
-}
-
-@Composable
-fun SearchGrid(movies: List<Movie>, onMovieClick: (Int) -> Unit) {
-    LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 16.dp, start = 8.dp, end = 8.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(movies, key = { it.id }) { movie -> MovieCardItem(movie, { onMovieClick(it) }) }
-    }
-}
-
-@Composable
-fun MovieCardItem(movie: Movie, onClick: (Int) -> Unit, width: androidx.compose.ui.unit.Dp? = null) {
-    val modifier = if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()
-    val context = LocalContext.current
-    Column(modifier = modifier.clickable { onClick(movie.id) }) {
-        Card(modifier = Modifier.aspectRatio(0.7f), shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
-            Box {
-                AsyncImage(model = ImageRequest.Builder(context).data(movie.posterUrl).crossfade(true).diskCachePolicy(CachePolicy.ENABLED).memoryCachePolicy(CachePolicy.ENABLED).build(), contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                if (movie.rating > 0) { Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp)) { Text(text = String.format(Locale.US, "%.1f", movie.rating), color = Color(0xFFFFD700), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) } }
-                if (movie.totalDuration > 0 && movie.lastPosition > 0) {
-                    val progressRatio = (movie.lastPosition.toFloat() / movie.totalDuration.toFloat()).coerceIn(0f, 1f)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(Color.Gray.copy(alpha = 0.5f))
-                            .align(Alignment.BottomStart)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(progressRatio)
-                                .fillMaxHeight()
-                                .background(Color.Red)
-                        )
-                    }
-                }
-            }
-        }
-        Text(text = movie.title, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp, start = 2.dp))
     }
 }

@@ -181,7 +181,30 @@ fun DetailScreen(
                 }
                 is DetailUiState.Error -> {
                     Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                        Text(state.message, color = Color.Red, textAlign = TextAlign.Center)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Error,
+                                contentDescription = null,
+                                tint = Color.Red,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Text(
+                                text = "Error de carga: ${state.message}",
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Button(
+                                onClick = { viewModel.loadMovieDetail() },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("Inténtalo de nuevo", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

@@ -43,7 +43,7 @@ interface TmdbApi {
     ): TmdbSeasonDetail
 
     companion object {
-        const val BASE_URL = "https://api.themoviedb.org/3/"
-        const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
+        const val BASE_URL = NetworkConfig.TMDB_BASE_URL
+        const val IMAGE_BASE_URL = NetworkConfig.TMDB_IMAGE_BASE_URL
     }
 }

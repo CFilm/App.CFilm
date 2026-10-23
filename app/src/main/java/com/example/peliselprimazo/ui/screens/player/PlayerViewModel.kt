@@ -5,11 +5,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
-import com.example.peliselprimazo.data.extractor.StreamExtractorFactory
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.domain.repository.MovieRepository
+import com.example.peliselprimazo.domain.usecase.GetMovieDetailUseCase
+import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
 import com.example.peliselprimazo.domain.usecase.GetUpdateConfigUseCase
+import com.example.peliselprimazo.domain.usecase.UpdatePlaybackProgressUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +41,9 @@ sealed class PlayerUiState {
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val repository: MovieRepository,
-    private val extractorFactory: StreamExtractorFactory,
+    private val getMovieDetailUseCase: GetMovieDetailUseCase,
+    private val getStreamUrlUseCase: GetStreamUrlUseCase,
+    private val updatePlaybackProgressUseCase: UpdatePlaybackProgressUseCase,
     private val adsManager: AdsManager,
     private val getUpdateConfigUseCase: GetUpdateConfigUseCase,
     savedStateHandle: SavedStateHandle
@@ -85,16 +89,15 @@ class PlayerViewModel @Inject constructor(
             }
 
             try {
-                val movie = movieId?.let { repository.getMovieById(it) }
+                val movie = movieId?.let { getMovieDetailUseCase(it) }
                 if (movie == null) {
                     _uiState.value = PlayerUiState.Error("No se encontró información del contenido")
                     return@launch
                 }
 
-                val extractor = extractorFactory.getExtractor(serverName)
                 val validPreloaded = if (!preloadedUrl.isNullOrBlank() && preloadedUrl != "null") preloadedUrl else null
-                val videoUrlToLoad = validPreloaded ?: extractor.extract(fileId, repository)
-                val headers = extractor.getHeaders(fileId)
+                val videoUrlToLoad = validPreloaded ?: getStreamUrlUseCase(serverName, fileId)
+                val headers = emptyMap<String, String>()
                 Log.d(tag, "Loading video: server=$serverName, fileId=$fileId, preloadedUrl=$preloadedUrl, videoUrlToLoad=$videoUrlToLoad")
 
                 if (!videoUrlToLoad.isNullOrBlank()) {
@@ -160,7 +163,7 @@ class PlayerViewModel @Inject constructor(
     fun updateProgress(position: Long, duration: Long) {
         val id = currentMovieId ?: return
         if (duration <= 0) return
-        viewModelScope.launch { repository.updatePlaybackProgress(id, position, duration) }
+        viewModelScope.launch { updatePlaybackProgressUseCase(id, position, duration) }
     }
 
     fun reportError() {

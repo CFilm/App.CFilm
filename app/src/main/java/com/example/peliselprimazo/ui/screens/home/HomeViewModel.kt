@@ -1,16 +1,19 @@
 package com.example.peliselprimazo.ui.screens.home
 
 import android.app.Activity
+import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.data.UpdateManager
-import com.example.peliselprimazo.data.extractor.StreamExtractorFactory
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.repository.MovieRepository
+import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
 import com.example.peliselprimazo.domain.usecase.GetUpdateConfigUseCase
+import com.example.peliselprimazo.domain.usecase.SyncContentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,8 +21,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val application: Application,
     private val repository: MovieRepository,
-    private val extractorFactory: StreamExtractorFactory,
+    private val syncContentUseCase: SyncContentUseCase,
+    private val getStreamUrlUseCase: GetStreamUrlUseCase,
     private val adsManager: AdsManager,
     private val getUpdateConfigUseCase: GetUpdateConfigUseCase,
     private val updateManager: UpdateManager
@@ -30,6 +35,9 @@ class HomeViewModel @Inject constructor(
 
     private val _isLoadingAuth = MutableStateFlow(false)
     val isLoadingAuth = _isLoadingAuth.asStateFlow()
+
+    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Idle)
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing = _isRefreshing.asStateFlow()
@@ -295,9 +303,17 @@ class HomeViewModel @Inject constructor(
 
     fun setAccentColor(hex: String) {
         _selectedAccentColor.value = hex
+        val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("selected_accent_color", hex).apply()
     }
 
     init {
+        val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val savedAccent = prefs.getString("selected_accent_color", null)
+        if (savedAccent != null) {
+            _selectedAccentColor.value = savedAccent
+        }
+
         viewModelScope.launch {
             allContent.collect { list ->
                 if (list.isNotEmpty()) {
@@ -319,12 +335,58 @@ class HomeViewModel @Inject constructor(
         updateManager.downloadAndInstall(url)
     }
 
-    fun clearUpdateError() {
-        updateManager.clearError()
-    }
-
     fun checkPendingInstall() {
         updateManager.checkAndInstallPending()
+    }
+
+    fun setSearchActive(active: Boolean) {
+        _isSearchActive.value = active
+        if (!active) {
+            _searchQuery.value = ""
+            searchGenreFilter.value = null
+            searchTypeFilter.value = "ALL"
+            searchRatingFilter.value = null
+            searchYearFilter.value = null
+        }
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        if (query.isNotBlank()) {
+            viewModelScope.launch {
+                repository.addSearchQuery(query)
+            }
+        }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        setSearchQuery(query)
+    }
+
+    fun onSearchActiveChange(active: Boolean) {
+        setSearchActive(active)
+    }
+
+    fun setSearchTypeFilter(type: String) { searchTypeFilter.value = type }
+    fun setSearchGenreFilter(genre: String?) { searchGenreFilter.value = genre }
+    fun setSearchRatingFilter(rating: Double?) { searchRatingFilter.value = rating }
+    fun setSearchYearFilter(year: String?) { searchYearFilter.value = year }
+
+    fun resetSearchFilters() {
+        searchTypeFilter.value = "ALL"
+        searchGenreFilter.value = null
+        searchRatingFilter.value = null
+        searchYearFilter.value = null
+    }
+
+    fun clearSearchHistory() {
+        viewModelScope.launch {
+            repository.clearSearchHistory()
+        }
+    }
+
+    fun setSelectedGenre(genre: String?) {
+        _selectedGenre.value = if (_selectedGenre.value == genre) null else genre
     }
 
     fun showRewardedVideo(activity: Activity, placementName: String? = null, onReward: () -> Unit) {
@@ -339,14 +401,17 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             if (isFirstLoad && allContent.value.isEmpty()) {
                 _isLoading.value = true
+                _uiState.value = HomeUiState.Loading
             } else if (!isFirstLoad) {
                 _isRefreshing.value = true
             }
             try {
-                repository.refreshContent()
+                syncContentUseCase()
                 _error.value = null
+                _uiState.value = HomeUiState.Success(allContent.value.size)
             } catch (e: Exception) {
                 _error.value = "Error al actualizar contenido"
+                _uiState.value = HomeUiState.Error(e.message ?: "Error desconocido")
             } finally {
                 _isLoading.value = false
                 _isRefreshing.value = false
@@ -359,12 +424,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isPreloading.value = true
             try {
-                val extractor = extractorFactory.getExtractor(firstLink.serverName)
-                val videoUrl = extractor.extract(firstLink.fileId, repository)
+                val videoUrl = getStreamUrlUseCase(firstLink.serverName, firstLink.fileId)
                 if (!videoUrl.isNullOrBlank()) {
                     onReady(videoUrl)
                 } else {
-                    _error.value = "No se pudo obtener el enlace de video"
+                    _error.value = "No se pudo obtener el enlace de reproducción"
                 }
             } catch (e: Exception) {
                 _error.value = "Error al preparar video: ${e.message}"
@@ -374,29 +438,20 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
-    fun onSearchActiveChange(active: Boolean) {
-        _isSearchActive.value = active
-        if (!active) {
-            _searchQuery.value = ""
-            _selectedGenre.value = null
-            resetSearchFilters()
+    fun clearCache() {
+        viewModelScope.launch {
+            repository.clearCache()
+            refreshData()
         }
     }
-    fun setSearchTypeFilter(type: String) { searchTypeFilter.value = type }
-    fun setSearchGenreFilter(genre: String?) { searchGenreFilter.value = genre }
-    fun setSearchRatingFilter(rating: Double?) { searchRatingFilter.value = rating }
-    fun setSearchYearFilter(year: String?) { searchYearFilter.value = year }
-    fun resetSearchFilters() {
-        searchTypeFilter.value = "ALL"
-        searchGenreFilter.value = null
-        searchRatingFilter.value = null
-        searchYearFilter.value = null
+
+    fun clearUpdateError() {
+        updateManager.clearError()
     }
-    fun onGenreChange(genre: String?) { _selectedGenre.value = genre }
-    fun clearSearchHistory() { viewModelScope.launch { repository.clearSearchHistory() } }
-    fun logout() { viewModelScope.launch { repository.logout() } }
-    fun clearCache() { viewModelScope.launch { repository.clearCache(); refreshData() } }
+
+    fun downloadUpdate(url: String) {
+        updateManager.downloadAndInstall(url)
+    }
 
     fun updateAvatar(uri: String) { viewModelScope.launch { repository.updateAvatar(uri) } }
     
@@ -438,6 +493,12 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+        }
+    }
 }
 
 data class HomeSection(
@@ -445,3 +506,10 @@ data class HomeSection(
     val items: List<Movie>,
     val isWatchingSection: Boolean = false
 )
+
+sealed interface HomeUiState {
+    data object Idle : HomeUiState
+    data object Loading : HomeUiState
+    data class Success(val contentCount: Int) : HomeUiState
+    data class Error(val message: String) : HomeUiState
+}

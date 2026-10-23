@@ -6,9 +6,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
-import com.example.peliselprimazo.data.extractor.StreamExtractorFactory
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.repository.MovieRepository
+import com.example.peliselprimazo.domain.usecase.GetMovieDetailUseCase
+import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
+import com.example.peliselprimazo.domain.usecase.ToggleLikeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +19,9 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val repository: MovieRepository,
-    private val extractorFactory: StreamExtractorFactory,
+    private val getMovieDetailUseCase: GetMovieDetailUseCase,
+    private val getStreamUrlUseCase: GetStreamUrlUseCase,
+    private val toggleLikeUseCase: ToggleLikeUseCase,
     private val adsManager: AdsManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -61,7 +65,7 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
             try {
-                val movie = repository.getMovieById(movieId)
+                val movie = getMovieDetailUseCase(movieId)
                 if (movie != null) {
                     _uiState.value = DetailUiState.Success(movie)
                 } else {
@@ -86,8 +90,7 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             _preloadingVideo.value = true
             try {
-                val extractor = extractorFactory.getExtractor(server)
-                val videoUrl = extractor.extract(fileId, repository)
+                val videoUrl = getStreamUrlUseCase(server, fileId)
                 if (!videoUrl.isNullOrBlank()) {
                     Log.d(tag, "Video extraído correctamente. Pasando al reproductor.")
                     onReady(videoUrl, null)
@@ -103,7 +106,7 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    fun toggleFavorito() { viewModelScope.launch { repository.toggleLike(movieId) } }
+    fun toggleFavorito() { viewModelScope.launch { toggleLikeUseCase(movieId) } }
     fun toggleViendo() { viewModelScope.launch { repository.addToWatching(movieId) } }
     fun toggleTerminado() { viewModelScope.launch { repository.toggleFinished(movieId) } }
     fun toggleVerDespues() { viewModelScope.launch { repository.toggleWatchLater(movieId) } }

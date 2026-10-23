@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -187,10 +188,23 @@ fun PlayerScreen(
                 }
             }
             is PlayerUiState.Error -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Rounded.Error, null, tint = Color.Red, modifier = Modifier.size(48.dp))
-                    Text(state.message, color = Color.White, modifier = Modifier.padding(16.dp))
-                    Button(onClick = onBack) { Text("Volver") }
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(Icons.Rounded.Error, null, tint = Color.Red, modifier = Modifier.size(56.dp))
+                        Text(state.message, color = Color.White, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(onClick = onBack, colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)) { 
+                                Text("Volver", color = Color.White) 
+                            }
+                            Button(onClick = { /* reload */ }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { 
+                                Text("Inténtalo de nuevo", color = Color.White, fontWeight = FontWeight.Bold) 
+                            }
+                        }
+                    }
                 }
             }
         }

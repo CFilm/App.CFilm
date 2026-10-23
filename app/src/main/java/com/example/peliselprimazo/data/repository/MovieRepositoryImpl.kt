@@ -12,7 +12,7 @@ import com.example.peliselprimazo.data.local.dao.SearchHistoryDao
 import com.example.peliselprimazo.data.local.entities.MovieEntity
 import com.example.peliselprimazo.data.local.entities.SearchHistoryEntity
 import com.example.peliselprimazo.data.model.*
-import com.example.peliselprimazo.data.remote.StreamtapeApi
+import com.example.peliselprimazo.data.remote.JellyfinApi
 import com.example.peliselprimazo.data.remote.TmdbApi
 import com.example.peliselprimazo.domain.model.CastMember
 import com.example.peliselprimazo.domain.model.ContentType
@@ -76,7 +76,7 @@ data class RemoteWatchingProgress(
 
 @Singleton
 class MovieRepositoryImpl @Inject constructor(
-    private val streamtapeApi: StreamtapeApi,
+    private val jellyfinApi: JellyfinApi,
     private val tmdbApi: TmdbApi,
     private val movieDao: MovieDao,
     private val searchHistoryDao: SearchHistoryDao,
@@ -85,8 +85,6 @@ class MovieRepositoryImpl @Inject constructor(
     private val notificationHelper: NotificationHelper
 ) : MovieRepository {
 
-    private val streamtapeLogin = BuildConfig.STREAMTAPE_LOGIN
-    private val streamtapeKey = BuildConfig.STREAMTAPE_KEY
     private val tmdbApiKey = BuildConfig.TMDB_API_KEY
 
     private val tmdbSemaphore = Semaphore(3)
@@ -156,7 +154,7 @@ class MovieRepositoryImpl @Inject constructor(
             val syncStartTime = System.currentTimeMillis()
             try {
                 val remoteData = fetchRemoteUserData()
-                val allFiles = getStreamtapeFilesSafe()
+                val allFiles = getJellyfinFilesSafe()
                 
                 if (allFiles.isEmpty()) {
                     movieDao.clearAllMovies()
@@ -166,21 +164,27 @@ class MovieRepositoryImpl @Inject constructor(
                 val resolvedItems = allFiles.map { pair ->
                     val info = parseFileName(pair.first)
                     val link = pair.second.copy(season = info.season, episode = info.episode, language = info.language)
-                    
-                    val tmdbId = tmdbSemaphore.withPermit {
-                        try {
-                            if (tmdbApiKey.isNotBlank()) {
-                                if (info.isTv || info.isAnime) {
-                                    tmdbApi.searchTv(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchTv(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchTv(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
-                                } else {
-                                    tmdbApi.searchMovie(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
-                                }
-                            } else null
-                        } catch (_: Exception) { null }
+                    val id = (info.cleanTitle + (info.year ?: "")).hashCode()
+                    val existing = movieDao.getMovieById(id)
+
+                    val tmdbId = if (existing != null && existing.posterUrl != null) {
+                        null
+                    } else {
+                        tmdbSemaphore.withPermit {
+                            try {
+                                if (tmdbApiKey.isNotBlank()) {
+                                    if (info.isTv || info.isAnime) {
+                                        tmdbApi.searchTv(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
+                                            ?: tmdbApi.searchTv(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
+                                            ?: tmdbApi.searchTv(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
+                                    } else {
+                                        tmdbApi.searchMovie(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
+                                            ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
+                                            ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
+                                    }
+                                } else null
+                            } catch (_: Exception) { null }
+                        }
                     }
 
                     Triple(info, link, tmdbId)
@@ -540,81 +544,43 @@ class MovieRepositoryImpl @Inject constructor(
         return movieDao.getMovieById(id)?.toDomain()
     }
 
-    private suspend fun getStreamtapeFilesSafe(): List<Pair<String, ServerLink>> {
+    private suspend fun getJellyfinFilesSafe(): List<Pair<String, ServerLink>> {
         val results = mutableListOf<Pair<String, ServerLink>>()
-        val folderQueue = mutableListOf<Pair<String?, String?>>()
-        folderQueue.add(null to null)
-        var iters = 0
-        val videoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m3u8")
-
-        while (folderQueue.isNotEmpty() && iters < 500) {
-            val pair = folderQueue.removeAt(0)
-            val currentId = pair.first
-            val currentParent = pair.second
-            try {
-                val response = streamtapeApi.listFolder(streamtapeLogin, streamtapeKey, currentId)
-                response.result?.let { res ->
-                    res.files?.forEach { file ->
-                        val fileName = file.name.lowercase()
-                        if (videoExtensions.any { fileName.endsWith(it) }) {
-                            val name = if (currentParent != null && file.name.length < 10) "$currentParent ${file.name}" else file.name
-                            results.add(name to ServerLink("Streamtape", file.linkid, "HD"))
-                        }
+        try {
+            val response = jellyfinApi.getItems()
+            Log.d("JellyfinApi", "Jellyfin items fetched count: ${response.items?.size ?: 0}")
+            response.items?.forEach { item ->
+                val itemType = item.type?.lowercase() ?: ""
+                Log.d("JellyfinApi", "Item: name=${item.name}, type=$itemType, id=${item.id}")
+                if (itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || item.type.isNullOrBlank()) {
+                    val title = if (itemType.contains("episode") && !item.seriesName.isNullOrBlank()) {
+                        "${item.seriesName} - ${item.name}"
+                    } else {
+                        item.name
                     }
-                    res.folders?.forEach { folder ->
-                        val folderName = folder.name.lowercase()
-                        if (!folderName.contains("thumbnail") && !folderName.startsWith(".")) {
-                            folderQueue.add(folder.id to folder.name)
-                        }
+                    if (!title.isNullOrBlank() && !item.id.isNullOrBlank()) {
+                        results.add(title to ServerLink("Jellyfin", item.id, "HD"))
                     }
                 }
-                delay(100)
-            } catch (_: Exception) { }
-            iters++
+            }
+        } catch (e: Exception) {
+            Log.e("JellyfinApi", "Error fetching Jellyfin items: ${e.message}", e)
         }
         return results
     }
 
     override suspend fun getDownloadUrl(serverName: String, fileId: String): String? = withContext(Dispatchers.IO) {
-        Log.d("StreamtapeApi", "getDownloadUrl called: serverName=$serverName, fileId=$fileId, login=$streamtapeLogin, keyLength=${streamtapeKey.length}")
+        Log.d("JellyfinApi", "getDownloadUrl called: serverName=$serverName, fileId=$fileId")
         try {
-            if (serverName.contains("Streamtape", true)) {
-                // Registro de vista silencioso para Streamtape para que no borren el video
-                try {
-                    val embedUrl = "https://streamtape.com/e/$fileId"
-                    val connection = URL(embedUrl).openConnection() as HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    connection.responseCode // Disparar petición para contar la vista
-                    connection.disconnect()
-                } catch (e: Exception) {
-                    Log.e("StreamtapeHit", "Error al registrar vista: ${e.message}")
-                }
-
-                val tResponse = streamtapeApi.getDownloadTicket(fileId, streamtapeLogin, streamtapeKey)
-                Log.d("StreamtapeApi", "getDownloadTicket response: status=${tResponse.status}, msg=${tResponse.msg}, result=${tResponse.result}")
-                val t = tResponse.result ?: run {
-                    Log.e("StreamtapeApi", "Ticket result is null for fileId=$fileId, login=$streamtapeLogin, keyLength=${streamtapeKey.length}")
-                    return@withContext null
-                }
-                delay(t.waitTime * 1000L + 200) 
-                val urlResponse = streamtapeApi.getDownloadLink(fileId, t.ticket)
-                Log.d("StreamtapeApi", "getDownloadLink response: status=${urlResponse.status}, msg=${urlResponse.msg}, result=${urlResponse.result}")
-                val url = urlResponse.result?.url
-                if (url != null) {
-                    val finalUrl = if (url.startsWith("//")) "https:$url" else if (url.startsWith("/")) "https://streamtape.com$url" else url
-                    Log.d("StreamtapeApi", "Final download URL: $finalUrl")
-                    return@withContext finalUrl
-                } else {
-                    Log.e("StreamtapeApi", "Download URL result is null")
-                }
+            if (serverName.contains("Jellyfin", true) || serverName.contains("Streamtape", true)) {
+                val streamUrl = "${JellyfinApi.BASE_URL}Videos/$fileId/stream?api_key=${JellyfinApi.API_KEY}&static=true"
+                Log.d("JellyfinApi", "Jellyfin stream URL: $streamUrl")
+                return@withContext streamUrl
             } else if (fileId.startsWith("http")) return@withContext fileId
             null
-        } catch (e: Exception) { 
-            Log.e("StreamtapeApi", "Exception in getDownloadUrl: ${e.message}", e)
-            null 
+        } catch (e: Exception) {
+            Log.e("JellyfinApi", "Exception in getDownloadUrl: ${e.message}", e)
+            null
         }
     }
 

@@ -13,18 +13,16 @@ interface StreamExtractor {
 }
 
 /**
- * Extractor para Streamtape
+ * Extractor para Jellyfin
  */
-class StreamtapeExtractor : StreamExtractor {
+class JellyfinExtractor : StreamExtractor {
     override suspend fun extract(fileId: String, repository: MovieRepository): String? {
-        return repository.getDownloadUrl("Streamtape", fileId)
+        return repository.getDownloadUrl("Jellyfin", fileId)
     }
 
     override fun getHeaders(fileId: String): Map<String, String> {
         return mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-            "Referer" to "https://streamtape.com/",
-            "Origin" to "https://streamtape.com"
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
         )
     }
 }
@@ -52,7 +50,7 @@ class StreamExtractorFactory @Inject constructor() {
     fun getExtractor(serverName: String): StreamExtractor {
         val name = serverName.lowercase().trim()
         return when {
-            name.contains("streamtape") -> StreamtapeExtractor()
+            name.contains("jellyfin") || name.contains("streamtape") -> JellyfinExtractor()
             else -> DefaultStreamExtractor(serverName)
         }
     }
