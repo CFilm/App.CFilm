@@ -14,6 +14,20 @@
                 extend: {
                     fontFamily: {
                         sans: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        marquee: 'marquee 35s linear infinite',
+                        'marquee-reverse': 'marquee-reverse 35s linear infinite',
+                    },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        },
+                        'marquee-reverse': {
+                            '0%': { transform: 'translateX(-50%)' },
+                            '100%': { transform: 'translateX(0%)' },
+                        }
                     }
                 }
             }
@@ -23,34 +37,34 @@
 <body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-purple-500 selection:text-white overflow-x-hidden">
 
     <!-- Header / Navbar with Social Bar right below -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/50">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="#" class="flex items-center space-x-3 group">
-                <img src="logo.png" alt="CFilm Logo" class="w-11 h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20 group-hover:scale-105 transition-transform">
-                <span class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">CFilm</span>
+    <header class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+            <a href="#" class="flex items-center space-x-2 sm:space-x-3 group">
+                <img src="logo.png" alt="CFilm Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20 group-hover:scale-105 transition-transform">
+                <span class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">CFilm</span>
             </a>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 sm:space-x-4">
                 <a href="#features" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Características</a>
                 <a href="#gallery" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Contenido</a>
-                <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 flex items-center space-x-2">
+                <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="bg-purple-600 hover:bg-purple-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 flex items-center space-x-1.5 sm:space-x-2">
                     <i class="fa-solid fa-download text-xs"></i>
                     <span>Descargar App</span>
                 </a>
             </div>
         </div>
         <!-- Social bar right below navbar -->
-        <div class="bg-zinc-900/90 border-t border-zinc-800/60 py-2 px-6">
-            <div class="max-w-7xl mx-auto flex justify-center sm:justify-start items-center space-x-8 text-xs font-medium text-zinc-300">
+        <div class="bg-zinc-900/90 border-t border-zinc-800/60 py-2 px-4 sm:px-6 overflow-x-auto">
+            <div class="max-w-7xl mx-auto flex justify-start sm:justify-center items-center space-x-6 sm:space-x-8 text-xs font-medium text-zinc-300 whitespace-nowrap">
                 <span class="text-zinc-500 hidden sm:inline font-semibold">Comunidad oficial:</span>
-                <a href="https://tiktok.com/@cfilm.1" target="_blank" class="hover:text-purple-400 transition-colors flex items-center space-x-2">
+                <a href="https://tiktok.com/@cfilm.1" target="_blank" class="hover:text-purple-400 transition-colors flex items-center space-x-1.5">
                     <i class="fa-brands fa-tiktok text-purple-400"></i>
                     <span>@cfilm.1</span>
                 </a>
-                <a href="https://facebook.com" target="_blank" class="hover:text-blue-400 transition-colors flex items-center space-x-2">
+                <a href="https://facebook.com" target="_blank" class="hover:text-blue-400 transition-colors flex items-center space-x-1.5">
                     <i class="fa-brands fa-facebook-f text-blue-400"></i>
                     <span>AnimeNexus</span>
                 </a>
-                <a href="https://youtube.com/@cfilm.anime.en.corto.1" target="_blank" class="hover:text-red-400 transition-colors flex items-center space-x-2">
+                <a href="https://youtube.com/@cfilm.anime.en.corto.1" target="_blank" class="hover:text-red-400 transition-colors flex items-center space-x-1.5">
                     <i class="fa-brands fa-youtube text-red-400"></i>
                     <span>@cfilm.anime.en.corto.1</span>
                 </a>
@@ -59,22 +73,22 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="relative pt-36 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+    <section class="relative pt-36 pb-16 sm:pt-44 sm:pb-24 md:pt-48 md:pb-32 overflow-hidden">
         <!-- Glow effects -->
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-purple-600/15 blur-[120px] rounded-full pointer-events-none"></div>
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[350px] bg-purple-600/15 blur-[100px] sm:blur-[120px] rounded-full pointer-events-none"></div>
 
-        <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                 <div class="lg:col-span-7 text-center lg:text-left">
                     <div class="inline-flex items-center space-x-2 bg-purple-500/10 border border-purple-500/20 px-3.5 py-1.5 rounded-full text-purple-400 text-xs font-semibold mb-6">
                         <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
                         <span>Versión 2.4.12 • Todo en 1</span>
                     </div>
-                    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
+                    <h1 class="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
                         Anime, series y películas <br>
                         <span class="bg-gradient-to-r from-purple-400 via-indigo-400 to-pink-500 bg-clip-text text-transparent">en una sola app.</span>
                     </h1>
-                    <p class="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto lg:mx-0 mb-10 font-normal">
+                    <p class="text-base sm:text-xl text-zinc-400 max-w-2xl mx-auto lg:mx-0 mb-8 sm:mb-10 font-normal">
                         Disfruta de la experiencia definitiva de streaming. Diseñado con una interfaz excelente, fluida y moderna para llevar tu entretenimiento a otro nivel.
                     </p>
                     <div id="download" class="flex flex-col sm:flex-row items-center justify-center lg:justify-start space-y-4 sm:space-y-0 sm:space-x-4">
@@ -97,9 +111,9 @@
                 <div class="lg:col-span-5 flex justify-center">
                     <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="relative w-full max-w-sm flex items-center justify-center group cursor-pointer">
                         <div class="absolute inset-0 bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 rounded-3xl blur-3xl transform rotate-3 group-hover:scale-105 transition-transform"></div>
-                        <div class="relative bg-zinc-900/90 border border-zinc-800 group-hover:border-purple-500/50 rounded-3xl p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center transition-all">
-                            <img src="logo.png" alt="CFilm App Icon" class="w-36 h-36 rounded-2xl object-cover shadow-2xl shadow-purple-500/40 border border-purple-500/30 mb-6 transform group-hover:scale-105 transition-transform duration-300">
-                            <h2 class="text-2xl font-extrabold text-white mb-1 group-hover:text-purple-400 transition-colors">CFilm Player</h2>
+                        <div class="relative bg-zinc-900/90 border border-zinc-800 group-hover:border-purple-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center text-center transition-all">
+                            <img src="logo.png" alt="CFilm App Icon" class="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl object-cover shadow-2xl shadow-purple-500/40 border border-purple-500/30 mb-6 transform group-hover:scale-105 transition-transform duration-300">
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-white mb-1 group-hover:text-purple-400 transition-colors">CFilm Player</h2>
                             <p class="text-xs text-zinc-400 mb-4">CFilm player, tu centro multimedia personal</p>
                             <div class="flex items-center space-x-2 bg-purple-600/20 border border-purple-500/30 px-4 py-2 rounded-xl text-purple-300 text-xs font-bold group-hover:bg-purple-600 group-hover:text-white transition-all shadow-md">
                                 <i class="fa-solid fa-download"></i>
@@ -112,110 +126,113 @@
         </div>
     </section>
 
-    <!-- Content Gallery: 3 Columns x 2 Rows Grid (6 items) with guaranteed 100% loading posters -->
-    <section id="gallery" class="py-20 bg-zinc-950/60 border-y border-zinc-900">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center max-w-2xl mx-auto mb-14">
-                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Películas, Series y Anime</h2>
-                <p class="text-zinc-400 text-base">Un vistazo al contenido en alta definición disponible en tu plataforma.</p>
+    <!-- Auto-Scrolling Marquee Gallery (Reverted to Auto-scroll carousel with guaranteed posters) -->
+    <section id="gallery" class="py-16 overflow-hidden bg-zinc-950/60 border-y border-zinc-900">
+        <div class="text-center max-w-2xl mx-auto mb-10 px-4 sm:px-6">
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Películas, Series y Anime en Alta Definición</h2>
+            <p class="text-zinc-400 text-sm">Explora una muestra del contenido ilimitado disponible en la app.</p>
+        </div>
+
+        <!-- Row 1: Marquee Left -->
+        <div class="relative w-full overflow-hidden flex mb-4">
+            <div class="flex space-x-4 animate-marquee whitespace-nowrap min-w-max">
+                <!-- Posters -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1635805737707-575885ab0820?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <!-- Duplicate for loop -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1635805737707-575885ab0820?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
             </div>
+        </div>
 
-            <!-- 3 columns x 2 rows grid (total 6 cards) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                <!-- Card 1: Película -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-purple-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1635805737707-575885ab0820?w=800&auto=format&fit=crop&q=80" alt="Película" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-purple-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Película</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Cine de Estreno & Blockbusters</h3>
-                        <p class="text-xs text-zinc-400">Las mejores películas recientes directo en tu dispositivo.</p>
-                    </div>
+        <!-- Row 2: Marquee Right -->
+        <div class="relative w-full overflow-hidden flex">
+            <div class="flex space-x-4 animate-marquee-reverse whitespace-nowrap min-w-max">
+                <!-- Posters -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
-                <!-- Card 2: Anime -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-pink-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80" alt="Anime" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-pink-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Anime</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Anime en Emisión y Clásicos</h3>
-                        <p class="text-xs text-zinc-400">Tus series de animación japonesa favoritas con subtítulos o doblaje.</p>
-                    </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
-                <!-- Card 3: Series -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-indigo-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80" alt="Series" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-indigo-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Series</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Maratones de Series</h3>
-                        <p class="text-xs text-zinc-400">Temporadas completas de las series más aclamadas de la crítica.</p>
-                    </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
-                <!-- Card 4: Ciencia Ficción / Acción -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-cyan-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80" alt="Ciencia Ficción" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-cyan-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Ciencia Ficción</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Mundos Épicos & Espaciales</h3>
-                        <p class="text-xs text-zinc-400">Aventuras inter galácticas y efectos visuales impresionantes.</p>
-                    </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
-                <!-- Card 5: Suspenso / Terror -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-red-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&auto=format&fit=crop&q=80" alt="Suspenso" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-red-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Suspenso</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Thrillers & Misterio</h3>
-                        <p class="text-xs text-zinc-400">Historias llenas de tensión, giros inesperados y suspenso nocturno.</p>
-                    </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
-                <!-- Card 6: Familia / Animación -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl group hover:border-emerald-500/50 transition-all">
-                    <div class="h-56 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80" alt="Animación" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-                        <span class="absolute top-3 left-3 bg-emerald-600/90 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm">Animación</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-white mb-1">Aventuras Animadas</h3>
-                        <p class="text-xs text-zinc-400">Contenido fantástico para disfrutar en cualquier momento.</p>
-                    </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
                 </div>
-
+                <!-- Duplicate for loop -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-24 bg-zinc-900/50 border-t border-zinc-900">
-        <div class="max-w-7xl mx-auto px-6">
+    <section id="features" class="py-20 sm:py-24 bg-zinc-900/50 border-t border-zinc-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">¿Por qué elegir CFilm?</h2>
                 <p class="text-zinc-400 text-base sm:text-lg">Todo lo que necesitas para tu entretenimiento reunido en una experiencia superior.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 <!-- Feature 1 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-layer-group"></i>
                     </div>
@@ -224,7 +241,7 @@
                 </div>
 
                 <!-- Feature 2 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-tv"></i>
                     </div>
@@ -233,7 +250,7 @@
                 </div>
 
                 <!-- Feature 3 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
@@ -242,7 +259,7 @@
                 </div>
 
                 <!-- Feature 4 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-bolt"></i>
                     </div>
@@ -251,7 +268,7 @@
                 </div>
 
                 <!-- Feature 5 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-wifi-slash"></i>
                     </div>
@@ -260,7 +277,7 @@
                 </div>
 
                 <!-- Feature 6 -->
-                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
+                <div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 hover:border-purple-500/50 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl mb-6 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-rotate"></i>
                     </div>
@@ -273,7 +290,7 @@
 
     <!-- Footer -->
     <footer class="py-12 border-t border-zinc-900 text-center text-sm text-zinc-500">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div class="flex items-center space-x-2">
                 <span class="font-bold text-zinc-300">CFilm</span>
                 <span>© 2026. Todos los derechos reservados.</span>
