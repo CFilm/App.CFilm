@@ -36,17 +36,33 @@
 </head>
 <body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-purple-500 selection:text-white overflow-x-hidden">
 
-    <!-- Header / Navbar -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <!-- Header / Navbar with Top Social Bar -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/50">
+        <!-- Top mini social bar -->
+        <div class="bg-purple-950/40 border-b border-purple-900/30 text-xs py-1.5 px-6 hidden sm:block">
+            <div class="max-w-7xl mx-auto flex justify-end items-center space-x-6 text-zinc-400">
+                <a href="https://tiktok.com/@cfilm.1" target="_blank" class="hover:text-purple-400 transition-colors flex items-center space-x-1.5">
+                    <i class="fa-brands fa-tiktok text-xs text-purple-400"></i>
+                    <span>@cfilm.1</span>
+                </a>
+                <a href="https://facebook.com" target="_blank" class="hover:text-blue-400 transition-colors flex items-center space-x-1.5">
+                    <i class="fa-brands fa-facebook-f text-xs text-blue-400"></i>
+                    <span>AnimeNexus</span>
+                </a>
+                <a href="https://youtube.com/@cfilm.anime.en.corto.1" target="_blank" class="hover:text-red-400 transition-colors flex items-center space-x-1.5">
+                    <i class="fa-brands fa-youtube text-xs text-red-400"></i>
+                    <span>@cfilm.anime.en.corto.1</span>
+                </a>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-6 h-16 sm:h-20 flex items-center justify-between">
             <a href="#" class="flex items-center space-x-3 group">
-                <img src="logo.png" alt="CFilm Logo" class="w-11 h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20 group-hover:scale-105 transition-transform">
+                <img src="logo.png" alt="CFilm Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover shadow-lg shadow-purple-500/30 border border-purple-500/20 group-hover:scale-105 transition-transform">
                 <span class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">CFilm</span>
             </a>
             <div class="flex items-center space-x-4">
                 <a href="#features" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Características</a>
                 <a href="#gallery" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Contenido</a>
-                <a href="#social" class="hidden md:inline-block text-sm font-medium text-zinc-400 hover:text-white transition-colors">Comunidad</a>
                 <a href="https://github.com/ElPrimazo1/Pelis-El-Primazo/releases/download/v2.4.12/CFilm.apk" class="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 flex items-center space-x-2">
                     <i class="fa-solid fa-download text-xs"></i>
                     <span>Descargar App</span>
@@ -109,97 +125,97 @@
         </div>
     </section>
 
-    <!-- Auto-Scrolling Content Gallery (Movies, Series, Anime with guaranteed Unsplash Cinematic & TMDB posters) -->
+    <!-- Auto-Scrolling Content Gallery (Mixed Movies, Series & Anime Posters) -->
     <section id="gallery" class="py-16 overflow-hidden bg-zinc-950/60 border-y border-zinc-900">
         <div class="text-center max-w-2xl mx-auto mb-10 px-6">
-            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Explora nuestro catálogo en alta definición</h2>
-            <p class="text-zinc-400 text-sm">Películas, series y animes actualizados al instante.</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Películas, Series y Anime en Alta Definición</h2>
+            <p class="text-zinc-400 text-sm">Explora una muestra del contenido ilimitado disponible en la app.</p>
         </div>
 
-        <!-- Row 1: Marquee Left -->
+        <!-- Row 1: Marquee Left (Movies & Series) -->
         <div class="relative w-full overflow-hidden flex mb-4">
             <div class="flex space-x-4 animate-marquee whitespace-nowrap min-w-max">
-                <!-- Posters -->
+                <!-- Posters: Spider-Man, Avatar, The Batman, Breaking Bad, Dune, Interstellar -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Cinematic">
+                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Spider-Man">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SciFi">
+                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avatar">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Batman">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avengers">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Action">
+                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Dune">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/bluiRAX4Jj5qQkI6ZlZ3gJ1cWjY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Breaking Bad">
                 </div>
-                <!-- Duplicate for loop -->
+                <!-- Duplicate for infinite loop -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Cinematic">
-                </div>
-                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SciFi">
+                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Spider-Man">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avatar">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Batman">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Action">
+                    <img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avengers">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Dune">
+                </div>
+                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://image.tmdb.org/t/p/w500/bluiRAX4Jj5qQkI6ZlZ3gJ1cWjY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Breaking Bad">
                 </div>
             </div>
         </div>
 
-        <!-- Row 2: Marquee Right -->
+        <!-- Row 2: Marquee Right (Anime & Blockbusters) -->
         <div class="relative w-full overflow-hidden flex">
             <div class="flex space-x-4 animate-marquee-reverse whitespace-nowrap min-w-max">
-                <!-- Posters -->
+                <!-- Posters: Demon Slayer, Attack on Titan, One Piece, Interstellar, Oppenheimer, The Last of Us -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Demon Slayer">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Attack on Titan">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/rSPw7gzJWAVSLJHURqHecb0Fm1M.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="One Piece">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://image.tmdb.org/t/p/w500/suopoADq0k8YZr4dQXcU6pToj6s.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Interstellar">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/reEMJA1iuUJCVnkbn95o7jNnO9F.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Oppenheimer">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/fiVW06jE7z9YnO4trhaMEdclSiC.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Last of Us">
                 </div>
-                <!-- Duplicate for loop -->
+                <!-- Duplicate for infinite loop -->
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
-                </div>
-                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Demon Slayer">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Attack on Titan">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Movie">
+                    <img src="https://image.tmdb.org/t/p/w500/rSPw7gzJWAVSLJHURqHecb0Fm1M.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="One Piece">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1514539079130-25950c84af65?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Series">
+                    <img src="https://image.tmdb.org/t/p/w500/suopoADq0k8YZr4dQXcU6pToj6s.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Interstellar">
                 </div>
                 <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://images.unsplash.com/photo-1568832344092-3a699b676f3f?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Anime">
+                    <img src="https://image.tmdb.org/t/p/w500/reEMJA1iuUJCVnkbn95o7jNnO9F.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Oppenheimer">
+                </div>
+                <div class="w-40 h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                    <img src="https://image.tmdb.org/t/p/w500/fiVW06jE7z9YnO4trhaMEdclSiC.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Last of Us">
                 </div>
             </div>
         </div>
@@ -267,43 +283,6 @@
                     <h3 class="text-xl font-bold mb-3 text-white">Sincronización en Vivo</h3>
                     <p class="text-zinc-400 text-sm leading-relaxed">Detección automática de red. Tan pronto recuperas señal o el servidor vuelve online, se actualiza solo.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Social Media / Community Section -->
-    <section id="social" class="py-20 bg-zinc-950 border-t border-zinc-900 text-center">
-        <div class="max-w-4xl mx-auto px-6">
-            <h2 class="text-3xl font-extrabold mb-4 text-white">Únete a nuestra comunidad</h2>
-            <p class="text-zinc-400 text-sm sm:text-base mb-10">Síguenos en nuestras redes sociales oficiales para enterarte de estrenos, novedades y actualizaciones.</p>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <!-- TikTok -->
-                <a href="https://tiktok.com/@cfilm.1" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-purple-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
-                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-purple-600 transition-all shadow-lg">
-                        <i class="fa-brands fa-tiktok"></i>
-                    </div>
-                    <span class="font-bold text-white mb-1">TikTok</span>
-                    <span class="text-xs text-purple-400 font-mono">@cfilm.1</span>
-                </a>
-
-                <!-- Facebook -->
-                <a href="https://facebook.com" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-blue-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
-                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-blue-600 transition-all shadow-lg">
-                        <i class="fa-brands fa-facebook-f"></i>
-                    </div>
-                    <span class="font-bold text-white mb-1">Facebook</span>
-                    <span class="text-xs text-blue-400 font-mono">AnimeNexus</span>
-                </a>
-
-                <!-- YouTube -->
-                <a href="https://youtube.com/@cfilm.anime.en.corto.1" target="_blank" class="bg-zinc-900/90 border border-zinc-800 hover:border-red-500/50 rounded-2xl p-6 flex flex-col items-center transition-all group">
-                    <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 group-hover:bg-red-600 transition-all shadow-lg">
-                        <i class="fa-brands fa-youtube"></i>
-                    </div>
-                    <span class="font-bold text-white mb-1">YouTube</span>
-                    <span class="text-xs text-red-400 font-mono">@cfilm.anime.en.corto.1</span>
-                </a>
             </div>
         </div>
     </section>
