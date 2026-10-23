@@ -14,6 +14,7 @@ interface MovieRepository {
     fun getTrends(): Flow<List<Movie>>
     
     suspend fun refreshContent()
+    val isServerOnline: Flow<Boolean>
     suspend fun getMovieById(id: Int): Movie?
     suspend fun getDownloadUrl(serverName: String, fileId: String): String?
     fun searchMovies(query: String): Flow<List<Movie>>

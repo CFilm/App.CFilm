@@ -44,6 +44,9 @@ class DetailViewModel @Inject constructor(
     val user = repository.getUser()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val isServerOnline = repository.isServerOnline
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val isFavorito = repository.isMovieLiked(movieId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 

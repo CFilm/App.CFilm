@@ -34,7 +34,6 @@ object NetworkModule {
             .readTimeout(NetworkConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(NetworkConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(RetryInterceptor())
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("User-Agent", NetworkConfig.USER_AGENT)
@@ -53,7 +52,6 @@ object NetworkModule {
             .readTimeout(NetworkConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(NetworkConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(RetryInterceptor())
             .addInterceptor { chain ->
                 val original = chain.request()
                 val url = original.url.newBuilder()
@@ -84,7 +82,6 @@ object NetworkModule {
             .readTimeout(NetworkConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(NetworkConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(RetryInterceptor())
             .addInterceptor { chain ->
                 val original = chain.request()
                 val apiKey = BuildConfig.TMDB_API_KEY

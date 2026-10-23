@@ -172,4 +172,8 @@ class PlayerViewModel @Inject constructor(
             repository.reportBrokenLink(state.movie.id, state.serverName, state.currentLink?.fileId ?: "")
         }
     }
+
+    fun onPlaybackError() {
+        _uiState.value = PlayerUiState.Error("Error de reproducción (Servidor fuera de línea o sin conexión)")
+    }
 }

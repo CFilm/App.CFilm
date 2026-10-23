@@ -162,6 +162,7 @@ fun PlayerScreen(
                         },
                         onError = {
                             viewModel.reportError()
+                            viewModel.onPlaybackError()
                         }
                     )
                     

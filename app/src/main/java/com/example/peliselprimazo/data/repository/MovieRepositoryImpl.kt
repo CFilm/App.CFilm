@@ -91,6 +91,8 @@ class MovieRepositoryImpl @Inject constructor(
     
     private val _currentUser = MutableStateFlow<User?>(null)
     private val _avatarOverride = MutableStateFlow<String?>(null)
+    private val _isServerOnline = MutableStateFlow(true)
+    override val isServerOnline: Flow<Boolean> = _isServerOnline.asStateFlow()
 
     private val lastProgressUpdate = mutableMapOf<Int, Long>()
 
@@ -154,10 +156,32 @@ class MovieRepositoryImpl @Inject constructor(
             val syncStartTime = System.currentTimeMillis()
             try {
                 val remoteData = fetchRemoteUserData()
-                val allFiles = getJellyfinFilesSafe()
+                val response = try {
+                    val res = jellyfinApi.getItems()
+                    _isServerOnline.value = true
+                    res
+                } catch (e: Exception) {
+                    Log.e("PrimazoSync", "Server offline, preserving local cache: ${e.message}")
+                    _isServerOnline.value = false
+                    return@withContext
+                }
+
+                val allFiles = mutableListOf<Pair<String, ServerLink>>()
+                response.items?.forEach { item ->
+                    val itemType = item.type?.lowercase() ?: ""
+                    if (itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || item.type.isNullOrBlank()) {
+                        val title = if (itemType.contains("episode") && !item.seriesName.isNullOrBlank()) {
+                            "${item.seriesName} - ${item.name}"
+                        } else {
+                            item.name
+                        }
+                        if (!title.isNullOrBlank() && !item.id.isNullOrBlank()) {
+                            allFiles.add(title to ServerLink("Jellyfin", item.id, "HD"))
+                        }
+                    }
+                }
                 
                 if (allFiles.isEmpty()) {
-                    movieDao.clearAllMovies()
                     return@withContext
                 }
 

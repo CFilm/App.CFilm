@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.data.UpdateManager
+import com.example.peliselprimazo.data.util.NetworkMonitor
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.repository.MovieRepository
@@ -25,6 +26,7 @@ class HomeViewModel @Inject constructor(
     private val repository: MovieRepository,
     private val syncContentUseCase: SyncContentUseCase,
     private val getStreamUrlUseCase: GetStreamUrlUseCase,
+    private val networkMonitor: NetworkMonitor,
     private val adsManager: AdsManager,
     private val getUpdateConfigUseCase: GetUpdateConfigUseCase,
     private val updateManager: UpdateManager
@@ -47,6 +49,9 @@ class HomeViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    private val _isServerOnline = MutableStateFlow(true)
+    val isServerOnline = _isServerOnline.asStateFlow()
 
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive = _isSearchActive.asStateFlow()
@@ -308,6 +313,7 @@ class HomeViewModel @Inject constructor(
     }
 
     init {
+        Log.d("CFilmHome", "HomeViewModel initialized")
         val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val savedAccent = prefs.getString("selected_accent_color", null)
         if (savedAccent != null) {
@@ -316,18 +322,39 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             allContent.collect { list ->
+                Log.d("CFilmHome", "AllContent collected: ${list.size} items")
                 if (list.isNotEmpty()) {
                     _isLoading.value = false
                 }
             }
         }
+
+        // Auto-sync when internet / server connectivity returns
+        var isInitial = true
+        viewModelScope.launch {
+            networkMonitor.isConnected.collect { connected ->
+                if (isInitial) {
+                    isInitial = false
+                    return@collect
+                }
+                if (connected) {
+                    Log.d("CFilmHome", "Network connectivity restored, auto-syncing...")
+                    refreshData()
+                }
+            }
+        }
+
         refreshData(isFirstLoad = true)
         syncConfig()
     }
 
     fun syncConfig() {
         viewModelScope.launch {
-            getUpdateConfigUseCase.sync()
+            try {
+                getUpdateConfigUseCase.sync()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error syncing config: ${e.message}")
+            }
         }
     }
 
@@ -399,6 +426,7 @@ class HomeViewModel @Inject constructor(
 
     fun refreshData(isFirstLoad: Boolean = false) {
         viewModelScope.launch {
+            Log.d("CFilmHome", "refreshData called: isFirstLoad=$isFirstLoad")
             if (isFirstLoad && allContent.value.isEmpty()) {
                 _isLoading.value = true
                 _uiState.value = HomeUiState.Loading
@@ -407,11 +435,15 @@ class HomeViewModel @Inject constructor(
             }
             try {
                 syncContentUseCase()
+                Log.d("CFilmHome", "syncContentUseCase completed successfully")
                 _error.value = null
+                _isServerOnline.value = true
                 _uiState.value = HomeUiState.Success(allContent.value.size)
             } catch (e: Exception) {
-                _error.value = "Error al actualizar contenido"
-                _uiState.value = HomeUiState.Error(e.message ?: "Error desconocido")
+                Log.e("CFilmHome", "refreshData exception (offline/error): ${e.message}", e)
+                _error.value = "Sin servidor disponible - Mostrando contenido guardado"
+                _isServerOnline.value = false
+                _uiState.value = HomeUiState.Error("Sin servidor disponible - Mostrando contenido guardado")
             } finally {
                 _isLoading.value = false
                 _isRefreshing.value = false

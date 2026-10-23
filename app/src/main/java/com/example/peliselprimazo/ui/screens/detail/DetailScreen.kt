@@ -70,6 +70,7 @@ fun DetailScreen(
     var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val error by viewModel.error.collectAsState()
     val isLoadingAuth by viewModel.isLoadingAuth.collectAsState()
+    val isServerOnline by viewModel.isServerOnline.collectAsState()
 
     val handleActionWithAuth = { action: () -> Unit ->
         if (user?.isLoggedIn == true) {
@@ -107,6 +108,7 @@ fun DetailScreen(
                 is DetailUiState.Success -> {
                     DetailContent(
                         movie = state.movie,
+                        isServerOnline = isServerOnline,
                         isFavorito = isFavorito,
                         isViendo = isViendo,
                         isTerminado = isTerminado,
@@ -249,6 +251,7 @@ fun DetailScreen(
 @Composable
 fun DetailContent(
     movie: Movie,
+    isServerOnline: Boolean,
     isFavorito: Boolean,
     isViendo: Boolean,
     isTerminado: Boolean,
@@ -261,7 +264,7 @@ fun DetailContent(
     onPlayButtonClick: () -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item { HeaderSection(movie, onPlayButtonClick) }
+        item { HeaderSection(movie, isServerOnline, onPlayButtonClick) }
         item { 
             UserActionRow(
                 isFavorito = isFavorito,
@@ -286,7 +289,7 @@ fun DetailContent(
 }
 
 @Composable
-fun HeaderSection(movie: Movie, onPlayClick: () -> Unit) {
+fun HeaderSection(movie: Movie, isServerOnline: Boolean, onPlayClick: () -> Unit) {
     Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
         AsyncImage(
             model = movie.backdropUrl ?: movie.posterUrl,
@@ -295,14 +298,33 @@ fun HeaderSection(movie: Movie, onPlayClick: () -> Unit) {
             contentScale = ContentScale.Crop
         )
         Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black), startY = 300f)))
-        Surface(
-            modifier = Modifier.size(64.dp).align(Alignment.Center).clickable { onPlayClick() },
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
-            tonalElevation = 8.dp
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reproducir", modifier = Modifier.size(40.dp), tint = Color.Black)
+        
+        if (isServerOnline) {
+            Surface(
+                modifier = Modifier.size(64.dp).align(Alignment.Center).clickable { onPlayClick() },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                tonalElevation = 8.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reproducir", modifier = Modifier.size(40.dp), tint = Color.Black)
+                }
+            }
+        } else {
+            Surface(
+                modifier = Modifier.height(48.dp).padding(horizontal = 16.dp).align(Alignment.Center),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.DarkGray.copy(alpha = 0.9f),
+                border = BorderStroke(1.dp, Color.Red)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(imageVector = Icons.Rounded.Error, contentDescription = null, tint = Color.Red, modifier = Modifier.size(20.dp))
+                    Text(text = "Servidor no disponible", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
             }
         }
     }

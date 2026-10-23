@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.peliselprimazo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.4.11"
+        versionCode = 11
+        versionName = "2.4.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

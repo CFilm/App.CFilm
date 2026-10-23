@@ -39,7 +39,7 @@ class ConfigRepositoryImpl @Inject constructor(
 
             trySend(UpdateConfig(
                 latestVersionCode = latestVersion,
-                latestVersionName = latestName.ifBlank { "2.4.11" },
+                latestVersionName = latestName.ifBlank { "2.4.12" },
                 updateUrl = updateUrl,
                 isUpdateAvailable = isAvailable,
                 isForceUpdate = isForce,
