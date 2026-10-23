@@ -126,122 +126,32 @@
         </div>
     </section>
 
-    <!-- Auto-Scrolling Marquee Gallery with verified Movies, Series & Anime Posters -->
+    <!-- Dynamic Auto-Scrolling Marquee Gallery (Powered by TMDB API) -->
     <section id="gallery" class="py-16 overflow-hidden bg-zinc-950/60 border-y border-zinc-900">
         <div class="text-center max-w-2xl mx-auto mb-10 px-4 sm:px-6">
-            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Películas, Series y Anime en Alta Definición</h2>
-            <p class="text-zinc-400 text-sm">Explora una muestra del contenido ilimitado disponible en la app.</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Tendencias y Estrenos en Tiempo Real</h2>
+            <p class="text-zinc-400 text-sm">Contenido actualizado automáticamente desde nuestra base de datos.</p>
         </div>
 
-        <!-- Row 1: Movies & Series Marquee -->
+        <!-- Row 1: Marquee Left -->
         <div class="relative w-full overflow-hidden flex mb-4">
-            <div class="flex space-x-4 animate-marquee whitespace-nowrap min-w-max">
-                <!-- Posters with badges -->
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Spider-Man">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Boys">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avatar">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/bluiRAX4Jj5qQkI6ZlZ3gJ1cWjY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Breaking Bad">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Dune">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/uKVVjHNqB5VmOrdxqAt2F7J78ED.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Stranger Things">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
-                <!-- Duplicate for seamless loop -->
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Spider-Man">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="The Boys">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/qNBAXBIQlnOThrVvA6mA2B5ndV6.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Avatar">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/bluiRAX4Jj5qQkI6ZlZ3gJ1cWjY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Breaking Bad">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Dune">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/uKVVjHNqB5VmOrdxqAt2F7J78ED.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Stranger Things">
-                    <span class="absolute bottom-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Serie</span>
-                </div>
+            <div id="marquee-row-1" class="flex space-x-4 animate-marquee whitespace-nowrap min-w-max">
+                <!-- Dynamically populated via JS using TMDB API -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
             </div>
         </div>
 
-        <!-- Row 2: Anime & Blockbusters Marquee -->
+        <!-- Row 2: Marquee Right -->
         <div class="relative w-full overflow-hidden flex">
-            <div class="flex space-x-4 animate-marquee-reverse whitespace-nowrap min-w-max">
-                <!-- Posters with badges -->
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Demon Slayer">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Attack on Titan">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rSPw7gzJWAVSLJHURqHecb0Fm1M.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="One Piece">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/suopoADq0k8YZr4dQXcU6pToj6s.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Interstellar">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/wx1JwgvCj8VSkAbVqnXv4d4h2zY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Jujutsu Kaisen">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/reEMJA1iuUJCVnkbn95o7jNnO9F.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Oppenheimer">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <!-- Duplicate for seamless loop -->
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Demon Slayer">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Attack on Titan">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/rSPw7gzJWAVSLJHURqHecb0Fm1M.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="One Piece">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/suopoADq0k8YZr4dQXcU6pToj6s.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Interstellar">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/wx1JwgvCj8VSkAbVqnXv4d4h2zY.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Jujutsu Kaisen">
-                    <span class="absolute bottom-2 left-2 bg-pink-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Anime</span>
-                </div>
-                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
-                    <img src="https://image.tmdb.org/t/p/w500/reEMJA1iuUJCVnkbn95o7jNnO9F.jpg" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Oppenheimer">
-                    <span class="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">Película</span>
-                </div>
+            <div id="marquee-row-2" class="flex space-x-4 animate-marquee-reverse whitespace-nowrap min-w-max">
+                <!-- Dynamically populated via JS using TMDB API -->
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
+                <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 animate-pulse"></div>
             </div>
         </div>
     </section>
@@ -324,6 +234,53 @@
             </div>
         </div>
     </footer>
+
+    <!-- Script to dynamically fetch trending movies, series & anime via TMDB API -->
+    <script>
+        async function loadTrendingContent() {
+            const apiKey = '4c4847173ec09e41bd12ce8654963e87';
+            const url = `https://api.themoviedb.org/3/trending/all/day?api_key=${apiKey}&language=es-MX`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.results) {
+                    const results = data.results.filter(item => item.poster_path);
+                    const row1 = document.getElementById('marquee-row-1');
+                    const row2 = document.getElementById('marquee-row-2');
+
+                    if (row1 && row2 && results.length > 0) {
+                        const half = Math.ceil(results.length / 2);
+                        const list1 = results.slice(0, half);
+                        const list2 = results.slice(half);
+
+                        const createPostersHTML = (items) => {
+                            return items.map(item => {
+                                const type = item.media_type === 'movie' ? 'Película' : item.media_type === 'tv' ? 'Serie' : 'Anime';
+                                const badgeColor = item.media_type === 'movie' ? 'bg-purple-600/90' : 'bg-indigo-600/90';
+                                const posterUrl = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+
+                                return `
+                                    <div class="w-36 h-52 sm:w-40 sm:h-60 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-lg group">
+                                        <img src="${posterUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Poster">
+                                        <span class="absolute bottom-2 left-2 ${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">${type}</span>
+                                    </div>
+                                `;
+                            }).join('');
+                        };
+
+                        // Populate twice for seamless infinite marquee loop
+                        row1.innerHTML = createPostersHTML(list1) + createPostersHTML(list1);
+                        row2.innerHTML = createPostersHTML(list2) + createPostersHTML(list2);
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching TMDB trending for landing page:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTrendingContent);
+    </script>
 
 </body>
 </html>
