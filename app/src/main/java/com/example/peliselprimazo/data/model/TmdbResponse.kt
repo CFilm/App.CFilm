@@ -82,6 +82,7 @@ data class TmdbEpisode(
 
 data class TmdbSeasonDetail(
     @SerializedName("season_number") val seasonNumber: Int?,
+    @SerializedName("poster_path") val posterPath: String?,
     @SerializedName("episodes") val episodes: List<TmdbEpisode>?
 )
 

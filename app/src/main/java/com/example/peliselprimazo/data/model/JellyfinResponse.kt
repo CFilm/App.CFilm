@@ -17,5 +17,6 @@ data class JellyfinItem(
     @SerializedName("CommunityRating") val communityRating: Float?,
     @SerializedName("SeriesName") val seriesName: String?,
     @SerializedName("IndexNumber") val indexNumber: Int?,
-    @SerializedName("ParentIndexNumber") val parentIndexNumber: Int?
+    @SerializedName("ParentIndexNumber") val parentIndexNumber: Int?,
+    @SerializedName("Path") val path: String?
 )

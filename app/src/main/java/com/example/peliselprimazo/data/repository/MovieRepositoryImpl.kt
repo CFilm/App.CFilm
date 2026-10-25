@@ -166,17 +166,52 @@ class MovieRepositoryImpl @Inject constructor(
                     return@withContext
                 }
 
-                val allFiles = mutableListOf<Pair<String, ServerLink>>()
+                val allFiles = mutableListOf<Triple<String, ServerLink, String?>>()
                 response.items?.forEach { item ->
                     val itemType = item.type?.lowercase() ?: ""
-                    if (itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || item.type.isNullOrBlank()) {
-                        val title = if (itemType.contains("episode") && !item.seriesName.isNullOrBlank()) {
-                            "${item.seriesName} - ${item.name}"
+                    val path = item.path ?: ""
+                    val pathLower = path.lowercase()
+                    
+                    val isAnimeFolder = pathLower.contains("anime")
+                    val isSeriesFolder = pathLower.contains("series") || pathLower.contains("tv")
+                    val isMovieFolder = pathLower.contains("pelicula") || pathLower.contains("movie")
+
+                    val isContainer = itemType.contains("series") || itemType.contains("season") || itemType.contains("folder") || itemType.contains("boxset")
+                    val isPlayable = itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || (!isContainer && !path.isBlank())
+
+                    if (!isContainer && isPlayable) {
+                        val fileNameFromPath = path.replace("\\", "/").substringAfterLast("/")
+                        val parsedFromName = parseFileName(item.name ?: "")
+                        val parsedFromPath = parseFileName(fileNameFromPath)
+
+                        val seasonNum = item.parentIndexNumber 
+                            ?: parsedFromName.season 
+                            ?: parsedFromPath.season 
+                            ?: 1
+
+                        val episodeNum = item.indexNumber 
+                            ?: parsedFromName.episode 
+                            ?: parsedFromPath.episode 
+                            ?: 1
+
+                        val rawShowName = item.seriesName
+                            ?: extractShowNameFromPath(path)
+                            ?: parsedFromName.cleanTitle.ifBlank { parsedFromPath.cleanTitle }
+
+                        val title = if (!rawShowName.isBlank()) {
+                            "$rawShowName S${seasonNum}E${episodeNum}"
                         } else {
-                            item.name
+                            item.name ?: parsedFromPath.cleanTitle
                         }
+                        
+                        val folderHint = when {
+                            isAnimeFolder || isSeriesFolder || itemType.contains("episode") || item.seriesName != null || extractShowNameFromPath(path) != null -> "TV"
+                            isMovieFolder || itemType.contains("movie") -> "MOVIE"
+                            else -> null
+                        }
+
                         if (!title.isNullOrBlank() && !item.id.isNullOrBlank()) {
-                            allFiles.add(title to ServerLink("Jellyfin", item.id, "HD"))
+                            allFiles.add(Triple(title, ServerLink("Jellyfin", item.id, "HD", season = seasonNum, episode = episodeNum), folderHint))
                         }
                     }
                 }
@@ -185,9 +220,16 @@ class MovieRepositoryImpl @Inject constructor(
                     return@withContext
                 }
 
-                val resolvedItems = allFiles.map { pair ->
-                    val info = parseFileName(pair.first)
-                    val link = pair.second.copy(season = info.season, episode = info.episode, language = info.language)
+                val resolvedItems = allFiles.map { triple ->
+                    var info = parseFileName(triple.first)
+                    val link = triple.second.copy(season = info.season, episode = info.episode, language = info.language)
+                    
+                    if (triple.third == "TV") {
+                        info = info.copy(isTv = true)
+                    } else if (triple.third == "MOVIE") {
+                        info = info.copy(isTv = false, isAnime = false)
+                    }
+
                     val id = (info.cleanTitle + (info.year ?: "")).hashCode()
                     val existing = movieDao.getMovieById(id)
 
@@ -220,8 +262,16 @@ class MovieRepositoryImpl @Inject constructor(
                     if (tmdbId != null) {
                         "tmdb|$tmdbId"
                     } else {
-                        val key = info.cleanTitle.lowercase().trim()
-                        if (info.isTv || info.isAnime) "tv|$key" else "movie|$key|${info.year ?: "unknown"}"
+                        val titleLower = info.cleanTitle.lowercase()
+                            .replace(Regex("[-–—:]"), " ")
+                            .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+|santen|sensou)\\b.*"), "")
+                            .replace(Regex("[^a-z0-9]"), " ")
+                            .trim()
+                        
+                        val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
+                        val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
+                        
+                        if (info.isTv || info.isAnime) "tv|$baseKey" else "movie|$baseKey|${info.year ?: "unknown"}"
                     }
                 }
 
@@ -276,6 +326,7 @@ class MovieRepositoryImpl @Inject constructor(
                         }
 
                         val existing = movieDao.getMovieById(id)
+                        val maxSeason = allLinks.mapNotNull { it.season }.maxOrNull()
                         
                         val tmdbData = if (existing?.posterUrl != null && existing.overview.isNotBlank() && existing.posterUrl.startsWith("http")) {
                             TmdbData(
@@ -293,7 +344,7 @@ class MovieRepositoryImpl @Inject constructor(
                         } else {
                             tmdbSemaphore.withPermit {
                                 try {
-                                    if (tmdbApiKey.isNotBlank()) fetchTmdbData(primaryInfo) else null
+                                    if (tmdbApiKey.isNotBlank()) fetchTmdbData(primaryInfo, maxSeason) else null
                                 } catch (_: Exception) { null }
                             }
                         }
@@ -360,6 +411,19 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun extractShowNameFromPath(path: String): String? {
+        try {
+            val parts = path.replace("\\", "/").split("/").filter { it.isNotBlank() }
+            if (parts.size >= 2) {
+                val parent = parts[parts.size - 2]
+                if (!parent.equals("anime", true) && !parent.equals("series", true) && !parent.equals("tv", true) && !parent.equals("peliculas", true) && !parent.startsWith("season", true) && !parent.startsWith("temporada", true)) {
+                    return parent
+                }
+            }
+        } catch (_: Exception) {}
+        return null
+    }
+
     private fun parseFileName(fileName: String): InternalFileInfo {
         val nameWithoutExt = fileName.replace(Regex("\\.(mp4|mkv|avi|mov|wmv|flv|webm|m3u8)$", RegexOption.IGNORE_CASE), "")
         var name = nameWithoutExt.replace(Regex("[._\\-/]"), " ")
@@ -368,20 +432,73 @@ class MovieRepositoryImpl @Inject constructor(
         val yearMatcher = yearPattern.matcher(name)
         val year = if (yearMatcher.find()) yearMatcher.group() else null
 
-        val sePattern = Pattern.compile("(?i)S(\\d{1,2})E(\\d{1,3})|(\\d{1,2})x(\\d{1,3})")
-        val seMatcher = sePattern.matcher(name)
         var season: Int? = null
         var episode: Int? = null
         var seMatch: String? = null
-        
-        if (seMatcher.find()) {
-            seMatch = seMatcher.group()
-            season = seMatcher.group(1)?.toIntOrNull() ?: seMatcher.group(3)?.toIntOrNull()
-            episode = seMatcher.group(2)?.toIntOrNull() ?: seMatcher.group(4)?.toIntOrNull()
+
+        // Pattern 1: s1e2, S01E02, s1.e2, s1 e2 (case-insensitive)
+        val p1 = Pattern.compile("(?i)s(\\d{1,2})[\\s._-]*e(\\d{1,3})")
+        val m1 = p1.matcher(name)
+        if (m1.find()) {
+            seMatch = m1.group()
+            season = m1.group(1)?.toIntOrNull()
+            episode = m1.group(2)?.toIntOrNull()
         }
 
-        val isAnime = name.lowercase().contains("anime")
+        // Pattern 2: 1x02
+        if (season == null || episode == null) {
+            val p2 = Pattern.compile("(?i)\\b(\\d{1,2})x(\\d{1,3})\\b")
+            val m2 = p2.matcher(name)
+            if (m2.find()) {
+                seMatch = m2.group()
+                season = m2.group(1)?.toIntOrNull()
+                episode = m2.group(2)?.toIntOrNull()
+            }
+        }
+
+        // Pattern 3: Season 1 Episode 2 / Temp 1 Cap 2
+        if (season == null || episode == null) {
+            val p3 = Pattern.compile("(?i)(?:season|temp|temporada)\\s*(\\d{1,2})[\\s._-]*(?:ep|episodio|cap|capitulo|e)?\\s*(\\d{1,3})")
+            val m3 = p3.matcher(name)
+            if (m3.find()) {
+                seMatch = m3.group()
+                season = m3.group(1)?.toIntOrNull()
+                episode = m3.group(2)?.toIntOrNull()
+            }
+        }
+
+        // Pattern 4: Episode / Cap / Ep number standalone (e.g. "ep 4", "cap 4", "e04")
+        if (season == null || episode == null) {
+            val p4 = Pattern.compile("(?i)\\b(?:ep|episodio|cap|capitulo|e)\\s*(\\d{1,3})\\b")
+            val m4 = p4.matcher(name)
+            if (m4.find()) {
+                seMatch = m4.group()
+                season = 1
+                episode = m4.group(1)?.toIntOrNull()
+            }
+        }
+
+        // Pattern 5: Dash followed by number (e.g. " - 04")
+        if (season == null || episode == null) {
+            val p5 = Pattern.compile("\\b-\\s*(\\d{1,3})\\b")
+            val m5 = p5.matcher(name)
+            if (m5.find()) {
+                val num = m5.group(1)?.toIntOrNull()
+                if (num != null && num in 1..999 && num != year?.toIntOrNull()) {
+                    season = 1
+                    episode = num
+                    seMatch = m5.group()
+                }
+            }
+        }
+
+        val isAnime = name.lowercase().contains("anime") || name.lowercase().contains("keroro") || name.lowercase().contains("tokyo")
         val isTv = season != null || name.lowercase().contains("tv") || isAnime
+
+        if (isTv || isAnime) {
+            if (season == null) season = 1
+            if (episode == null) episode = 1
+        }
 
         var cleanTitle = name
         
@@ -441,26 +558,21 @@ class MovieRepositoryImpl @Inject constructor(
     ): String {
         val allAlts = (altTitles?.results ?: emptyList()) + (altTitles?.titles ?: emptyList())
 
-        if (isAnime) {
-            val romaji = allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
-                ?: allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
-                ?: allAlts.find { (it.isoCountry?.equals("US", ignoreCase = true) == true || it.isoCountry?.equals("JP", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
-            if (!romaji.isNullOrBlank() && !containsJapaneseChars(romaji)) {
-                return romaji
-            }
+        val romaji = allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
+            ?: allAlts.find { it.type?.equals("Romaji", ignoreCase = true) == true && !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
+            ?: allAlts.find { (it.isoCountry?.equals("US", ignoreCase = true) == true || it.isoCountry?.equals("JP", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
+            ?: allAlts.find { !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
+
+        if (!romaji.isNullOrBlank() && !containsJapaneseChars(romaji)) {
+            return romaji
+        }
+
+        if (isAnime && !fallbackTitle.isBlank() && !containsJapaneseChars(fallbackTitle)) {
+            return fallbackTitle
         }
 
         if (!containsJapaneseChars(primaryTitle)) {
             return primaryTitle
-        }
-        val romajiAlt = allAlts.find { (it.type?.contains("Romaji", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
-            ?: allAlts.find { (it.type?.contains("Romaji", ignoreCase = true) == true) && !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
-            ?: allAlts.find { (it.isoCountry?.equals("US", ignoreCase = true) == true || it.isoCountry?.equals("JP", ignoreCase = true) == true) && !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
-            ?: allAlts.find { !it.title.isNullOrBlank() && !containsJapaneseChars(it.title) }?.title
-            ?: allAlts.find { !it.name.isNullOrBlank() && !containsJapaneseChars(it.name) }?.name
-
-        if (romajiAlt != null && !containsJapaneseChars(romajiAlt)) {
-            return romajiAlt
         }
         if (originalTitle != null && !containsJapaneseChars(originalTitle)) {
             return originalTitle
@@ -468,10 +580,10 @@ class MovieRepositoryImpl @Inject constructor(
         if (!containsJapaneseChars(fallbackTitle)) {
             return fallbackTitle
         }
-        return primaryTitle
+        return if (!fallbackTitle.isBlank()) fallbackTitle else primaryTitle
     }
 
-    private suspend fun fetchTmdbData(info: InternalFileInfo): TmdbData? {
+    private suspend fun fetchTmdbData(info: InternalFileInfo, maxSeason: Int? = null): TmdbData? {
         return try {
             val id = if (info.isTv || info.isAnime) {
                 tmdbApi.searchTv(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
@@ -485,7 +597,21 @@ class MovieRepositoryImpl @Inject constructor(
             
             if (info.isTv || info.isAnime) {
                 val details = tmdbApi.getTvDetails(id)
-                val displayTitle = selectRomajiOrBestTitle(details.name, details.originalName, details.alternativeTitles, info.cleanTitle, info.isAnime)
+                val displayTitle = if (info.isAnime) {
+                    selectRomajiOrBestTitle(details.name, details.originalName, details.alternativeTitles, info.cleanTitle, true)
+                } else {
+                    details.name.ifBlank { info.cleanTitle }
+                }
+                
+                var seasonPosterUrl: String? = null
+                if (maxSeason != null && maxSeason > 0) {
+                    try {
+                        val seasonDetail = tmdbApi.getTvSeasonDetails(id, maxSeason)
+                        seasonPosterUrl = seasonDetail.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+                    } catch (_: Exception) {}
+                }
+
+                val posterUrl = seasonPosterUrl ?: details.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
                 val altTitlesList = (details.alternativeTitles?.results ?: emptyList()) + (details.alternativeTitles?.titles ?: emptyList())
                 val altNamesString = altTitlesList.mapNotNull { it.title ?: it.name }.distinct().take(10).joinToString(", ")
                 val enrichedOverview = if (altNamesString.isNotBlank()) {
