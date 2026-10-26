@@ -426,11 +426,15 @@ class HomeViewModel @Inject constructor(
 
     fun refreshData(isFirstLoad: Boolean = false) {
         viewModelScope.launch {
-            Log.d("CFilmHome", "refreshData called: isFirstLoad=$isFirstLoad")
-            if (isFirstLoad && allContent.value.isEmpty()) {
-                _isLoading.value = true
-                _uiState.value = HomeUiState.Loading
-            } else if (!isFirstLoad) {
+            Log.d("CFilmHome", "refreshData called: isFirstLoad=$isFirstLoad, cachedItems=${allContent.value.size}")
+            if (isFirstLoad) {
+                if (allContent.value.isNotEmpty()) {
+                    _isLoading.value = false
+                } else {
+                    _isLoading.value = true
+                    _uiState.value = HomeUiState.Loading
+                }
+            } else {
                 _isRefreshing.value = true
             }
             try {

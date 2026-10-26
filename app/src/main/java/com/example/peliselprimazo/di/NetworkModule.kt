@@ -45,6 +45,30 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("StreamtapeRetrofit")
+    fun provideStreamtapeRetrofit(loggingInterceptor: HttpLoggingInterceptor): Retrofit {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(NetworkConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(NetworkConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(NetworkConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", NetworkConfig.USER_AGENT)
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+
+        return Retrofit.Builder()
+            .baseUrl(StreamtapeApi.BASE_URL)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
     @Named("JellyfinRetrofit")
     fun provideJellyfinRetrofit(loggingInterceptor: HttpLoggingInterceptor): Retrofit {
         val jellyfinClient = OkHttpClient.Builder()
@@ -106,6 +130,12 @@ object NetworkModule {
             .client(tmdbClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideStreamtapeApi(@Named("StreamtapeRetrofit") retrofit: Retrofit): StreamtapeApi {
+        return retrofit.create(StreamtapeApi::class.java)
     }
 
     @Provides

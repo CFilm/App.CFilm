@@ -192,7 +192,8 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refreshData() },
             modifier = Modifier.fillMaxSize(),
-            state = rememberPullToRefreshState()
+            state = rememberPullToRefreshState(),
+            indicator = {}
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (isSearchActive) {
@@ -248,7 +249,32 @@ fun HomeScreen(
                 contentAlignment = Alignment.TopCenter
             ) {
                 if (isLoading || isRefreshing) {
-                    ParticleLoading(modifier = Modifier.size(60.dp).offset(y = (-15).dp))
+                    Surface(
+                        modifier = Modifier
+                            .padding(top = 65.dp)
+                            .clip(RoundedCornerShape(16.dp)),
+                        color = Color.Black.copy(alpha = 0.9f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                        shadowElevation = 8.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 2.5.dp
+                            )
+                            Text(
+                                text = "Actualizando contenido...",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
 
                 Surface(

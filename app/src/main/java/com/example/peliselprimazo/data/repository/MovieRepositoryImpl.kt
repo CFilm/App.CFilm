@@ -13,6 +13,7 @@ import com.example.peliselprimazo.data.local.entities.MovieEntity
 import com.example.peliselprimazo.data.local.entities.SearchHistoryEntity
 import com.example.peliselprimazo.data.model.*
 import com.example.peliselprimazo.data.remote.JellyfinApi
+import com.example.peliselprimazo.data.remote.StreamtapeApi
 import com.example.peliselprimazo.data.remote.TmdbApi
 import com.example.peliselprimazo.domain.model.CastMember
 import com.example.peliselprimazo.domain.model.ContentType
@@ -77,6 +78,7 @@ data class RemoteWatchingProgress(
 @Singleton
 class MovieRepositoryImpl @Inject constructor(
     private val jellyfinApi: JellyfinApi,
+    private val streamtapeApi: StreamtapeApi,
     private val tmdbApi: TmdbApi,
     private val movieDao: MovieDao,
     private val searchHistoryDao: SearchHistoryDao,
@@ -85,6 +87,8 @@ class MovieRepositoryImpl @Inject constructor(
     private val notificationHelper: NotificationHelper
 ) : MovieRepository {
 
+    private val streamtapeLogin = BuildConfig.STREAMTAPE_LOGIN
+    private val streamtapeKey = BuildConfig.STREAMTAPE_KEY
     private val tmdbApiKey = BuildConfig.TMDB_API_KEY
 
     private val tmdbSemaphore = Semaphore(3)
@@ -156,66 +160,77 @@ class MovieRepositoryImpl @Inject constructor(
             val syncStartTime = System.currentTimeMillis()
             try {
                 val remoteData = fetchRemoteUserData()
-                val response = try {
-                    val res = jellyfinApi.getItems()
-                    _isServerOnline.value = true
-                    res
-                } catch (e: Exception) {
-                    Log.e("PrimazoSync", "Server offline, preserving local cache: ${e.message}")
-                    _isServerOnline.value = false
-                    return@withContext
-                }
+                
+                val jellyfinDeferred = async {
+                    try {
+                        val response = jellyfinApi.getItems()
+                        _isServerOnline.value = true
+                        val list = mutableListOf<Triple<String, ServerLink, String?>>()
+                        response.items?.forEach { item ->
+                            val itemType = item.type?.lowercase() ?: ""
+                            val path = item.path ?: ""
+                            val pathLower = path.lowercase()
+                            
+                            val isAnimeFolder = pathLower.contains("anime")
+                            val isSeriesFolder = pathLower.contains("series") || pathLower.contains("tv")
+                            val isMovieFolder = pathLower.contains("pelicula") || pathLower.contains("movie")
 
-                val allFiles = mutableListOf<Triple<String, ServerLink, String?>>()
-                response.items?.forEach { item ->
-                    val itemType = item.type?.lowercase() ?: ""
-                    val path = item.path ?: ""
-                    val pathLower = path.lowercase()
-                    
-                    val isAnimeFolder = pathLower.contains("anime")
-                    val isSeriesFolder = pathLower.contains("series") || pathLower.contains("tv")
-                    val isMovieFolder = pathLower.contains("pelicula") || pathLower.contains("movie")
+                            val isContainer = itemType.contains("series") || itemType.contains("season") || itemType.contains("folder") || itemType.contains("boxset")
+                            val isPlayable = itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || (!isContainer && !path.isBlank())
 
-                    val isContainer = itemType.contains("series") || itemType.contains("season") || itemType.contains("folder") || itemType.contains("boxset")
-                    val isPlayable = itemType.contains("movie") || itemType.contains("episode") || itemType.contains("video") || (!isContainer && !path.isBlank())
+                            if (!isContainer && isPlayable) {
+                                val fileNameFromPath = path.replace("\\", "/").substringAfterLast("/")
+                                val parsedFromName = parseFileName(item.name ?: "")
+                                val parsedFromPath = parseFileName(fileNameFromPath)
 
-                    if (!isContainer && isPlayable) {
-                        val fileNameFromPath = path.replace("\\", "/").substringAfterLast("/")
-                        val parsedFromName = parseFileName(item.name ?: "")
-                        val parsedFromPath = parseFileName(fileNameFromPath)
+                                val seasonNum = item.parentIndexNumber 
+                                    ?: parsedFromName.season 
+                                    ?: parsedFromPath.season 
+                                    ?: 1
 
-                        val seasonNum = item.parentIndexNumber 
-                            ?: parsedFromName.season 
-                            ?: parsedFromPath.season 
-                            ?: 1
+                                val episodeNum = item.indexNumber 
+                                    ?: parsedFromName.episode 
+                                    ?: parsedFromPath.episode 
+                                    ?: 1
 
-                        val episodeNum = item.indexNumber 
-                            ?: parsedFromName.episode 
-                            ?: parsedFromPath.episode 
-                            ?: 1
+                                val rawShowName = item.seriesName
+                                    ?: extractShowNameFromPath(path)
+                                    ?: parsedFromName.cleanTitle.ifBlank { parsedFromPath.cleanTitle }
 
-                        val rawShowName = item.seriesName
-                            ?: extractShowNameFromPath(path)
-                            ?: parsedFromName.cleanTitle.ifBlank { parsedFromPath.cleanTitle }
+                                val title = if (!rawShowName.isBlank()) {
+                                    "$rawShowName S${seasonNum}E${episodeNum}"
+                                } else {
+                                    item.name ?: parsedFromPath.cleanTitle
+                                }
+                                
+                                val folderHint = when {
+                                    isAnimeFolder || isSeriesFolder || itemType.contains("episode") || item.seriesName != null || extractShowNameFromPath(path) != null -> "TV"
+                                    isMovieFolder || itemType.contains("movie") -> "MOVIE"
+                                    else -> null
+                                }
 
-                        val title = if (!rawShowName.isBlank()) {
-                            "$rawShowName S${seasonNum}E${episodeNum}"
-                        } else {
-                            item.name ?: parsedFromPath.cleanTitle
+                                if (!title.isNullOrBlank() && !item.id.isNullOrBlank()) {
+                                    list.add(Triple(title, ServerLink("Jellyfin", item.id, "HD", season = seasonNum, episode = episodeNum), folderHint))
+                                }
+                            }
                         }
-                        
-                        val folderHint = when {
-                            isAnimeFolder || isSeriesFolder || itemType.contains("episode") || item.seriesName != null || extractShowNameFromPath(path) != null -> "TV"
-                            isMovieFolder || itemType.contains("movie") -> "MOVIE"
-                            else -> null
-                        }
-
-                        if (!title.isNullOrBlank() && !item.id.isNullOrBlank()) {
-                            allFiles.add(Triple(title, ServerLink("Jellyfin", item.id, "HD", season = seasonNum, episode = episodeNum), folderHint))
-                        }
+                        list
+                    } catch (e: Exception) {
+                        Log.e("PrimazoSync", "Jellyfin server offline: ${e.message}")
+                        _isServerOnline.value = false
+                        emptyList()
                     }
                 }
-                
+
+                val streamtapeDeferred = async {
+                    try {
+                        getStreamtapeFilesSafe()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                }
+
+                val allFiles = jellyfinDeferred.await() + streamtapeDeferred.await()
                 if (allFiles.isEmpty()) {
                     return@withContext
                 }
@@ -257,22 +272,17 @@ class MovieRepositoryImpl @Inject constructor(
                 }
 
                 val grouped = resolvedItems.groupBy { triple ->
-                    val tmdbId = triple.third
                     val info = triple.first
-                    if (tmdbId != null) {
-                        "tmdb|$tmdbId"
-                    } else {
-                        val titleLower = info.cleanTitle.lowercase()
-                            .replace(Regex("[-–—:]"), " ")
-                            .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+|santen|sensou)\\b.*"), "")
-                            .replace(Regex("[^a-z0-9]"), " ")
-                            .trim()
-                        
-                        val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
-                        val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
-                        
-                        if (info.isTv || info.isAnime) "tv|$baseKey" else "movie|$baseKey|${info.year ?: "unknown"}"
-                    }
+                    val titleLower = info.cleanTitle.lowercase()
+                        .replace(Regex("[-–—:]"), " ")
+                        .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+|santen|sensou)\\b.*"), "")
+                        .replace(Regex("[^a-z0-9]"), " ")
+                        .trim()
+                    
+                    val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
+                    val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
+                    
+                    if (info.isTv || info.isAnime) "tv|$baseKey" else "movie|$baseKey|${info.year ?: "unknown"}"
                 }
 
                 val activeMovieIds = mutableSetOf<Int>()
@@ -720,18 +730,82 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDownloadUrl(serverName: String, fileId: String): String? = withContext(Dispatchers.IO) {
-        Log.d("JellyfinApi", "getDownloadUrl called: serverName=$serverName, fileId=$fileId")
+        Log.d("StreamtapeApi", "getDownloadUrl called: serverName=$serverName, fileId=$fileId")
         try {
-            if (serverName.contains("Jellyfin", true) || serverName.contains("Streamtape", true)) {
+            if (serverName.contains("Streamtape", true)) {
+                try {
+                    val embedUrl = "https://streamtape.com/e/$fileId"
+                    val connection = URL(embedUrl).openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    connection.responseCode
+                    connection.disconnect()
+                } catch (e: Exception) {
+                    Log.e("StreamtapeHit", "Error al registrar vista: ${e.message}")
+                }
+
+                val tResponse = streamtapeApi.getDownloadTicket(fileId, streamtapeLogin, streamtapeKey)
+                val t = tResponse.result ?: return@withContext null
+                delay(t.waitTime * 1000L + 200)
+                val urlResponse = streamtapeApi.getDownloadLink(fileId, t.ticket)
+                val url = urlResponse.result?.url
+                if (url != null) {
+                    val finalUrl = if (url.startsWith("//")) "https:$url" else if (url.startsWith("/")) "https://streamtape.com$url" else url
+                    return@withContext finalUrl
+                }
+            } else if (serverName.contains("Jellyfin", true)) {
                 val streamUrl = "${JellyfinApi.BASE_URL}Videos/$fileId/stream?api_key=${JellyfinApi.API_KEY}&static=true"
                 Log.d("JellyfinApi", "Jellyfin stream URL: $streamUrl")
                 return@withContext streamUrl
             } else if (fileId.startsWith("http")) return@withContext fileId
             null
         } catch (e: Exception) {
-            Log.e("JellyfinApi", "Exception in getDownloadUrl: ${e.message}", e)
+            Log.e("StreamtapeApi", "Exception in getDownloadUrl: ${e.message}", e)
             null
         }
+    }
+
+    private suspend fun getStreamtapeFilesSafe(): List<Triple<String, ServerLink, String?>> {
+        val results = mutableListOf<Triple<String, ServerLink, String?>>()
+        val folderQueue = mutableListOf<Pair<String?, String?>>()
+        folderQueue.add(null to null)
+        var iters = 0
+        val videoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m3u8")
+
+        while (folderQueue.isNotEmpty() && iters < 500) {
+            val pair = folderQueue.removeAt(0)
+            val currentId = pair.first
+            val currentParent = pair.second
+            try {
+                Log.d("StreamtapeApi", "Listing folder: id=$currentId, parent=$currentParent")
+                val response = streamtapeApi.listFolder(streamtapeLogin, streamtapeKey, currentId)
+                Log.d("StreamtapeApi", "listFolder response status: ${response.status}, msg: ${response.msg}, files count: ${response.result?.files?.size ?: 0}")
+                response.result?.let { res ->
+                    res.files?.forEach { file ->
+                        val fileName = file.name.lowercase()
+                        if (videoExtensions.any { fileName.endsWith(it) }) {
+                            val name = if (currentParent != null && file.name.length < 10) "$currentParent ${file.name}" else file.name
+                            val parsed = parseFileName(name)
+                            results.add(Triple(name, ServerLink("Streamtape", file.linkid, "HD", season = parsed.season, episode = parsed.episode, language = parsed.language), if (parsed.isTv || parsed.isAnime) "TV" else "MOVIE"))
+                        }
+                    }
+                    res.folders?.forEach { folder ->
+                        val folderName = folder.name.lowercase()
+                        if (!folderName.contains("thumbnail") && !folderName.startsWith(".")) {
+                            folderQueue.add(folder.id to folder.name)
+                        }
+                    }
+                }
+                delay(100)
+            } catch (e: Exception) {
+                Log.e("StreamtapeApi", "Error listing folder id=$currentId: ${e.message}", e)
+            }
+            iters++
+        }
+        Log.d("StreamtapeApi", "Total Streamtape files found: ${results.size}")
+        return results
     }
 
     override fun searchMovies(query: String): Flow<List<Movie>> = movieDao.searchMovies(query).map { entities ->

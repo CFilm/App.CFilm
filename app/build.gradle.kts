@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.peliselprimazo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "2.4.13"
+        versionCode = 13
+        versionName = "2.4.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -32,6 +32,8 @@ android {
         buildConfigField("String", "IRONSOURCE_APP_KEY", "\"${secrets["IRONSOURCE_APP_KEY"] ?: ""}\"")
         buildConfigField("String", "JELLYFIN_BASE_URL", "\"${secrets["JELLYFIN_BASE_URL"] ?: "https://app.cfilm.site/"}\"")
         buildConfigField("String", "JELLYFIN_API_KEY", "\"${secrets["JELLYFIN_API_KEY"] ?: ""}\"")
+        buildConfigField("String", "STREAMTAPE_LOGIN", "\"${secrets["STREAMTAPE_LOGIN"] ?: ""}\"")
+        buildConfigField("String", "STREAMTAPE_KEY", "\"${secrets["STREAMTAPE_KEY"] ?: ""}\"")
     }
 
     buildTypes {

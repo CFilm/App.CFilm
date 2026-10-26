@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +28,7 @@ import java.util.Locale
 
 @Composable
 fun WatchingCardItem(movie: Movie, onClick: () -> Unit) {
-    Column(modifier = Modifier.width(200.dp).clickable { onClick() }) {
+    Box(modifier = Modifier.width(200.dp).clickable { onClick() }) {
         Card(modifier = Modifier.height(110.dp).fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
             Box {
                 AsyncImage(model = movie.backdropUrl ?: movie.posterUrl, contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -43,7 +42,6 @@ fun WatchingCardItem(movie: Movie, onClick: () -> Unit) {
                 }
             }
         }
-        Text(text = movie.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -65,7 +63,7 @@ fun SearchGrid(movies: List<Movie>, onMovieClick: (Int) -> Unit) {
 fun MovieCardItem(movie: Movie, onClick: (Int) -> Unit, width: Dp? = null) {
     val modifier = if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()
     val context = LocalContext.current
-    Column(modifier = modifier.clickable { onClick(movie.id) }) {
+    Box(modifier = modifier.clickable { onClick(movie.id) }) {
         Card(modifier = Modifier.aspectRatio(0.7f), shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
             Box {
                 AsyncImage(model = ImageRequest.Builder(context).data(movie.posterUrl).crossfade(true).diskCachePolicy(CachePolicy.ENABLED).memoryCachePolicy(CachePolicy.ENABLED).build(), contentDescription = movie.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -89,6 +87,5 @@ fun MovieCardItem(movie: Movie, onClick: (Int) -> Unit, width: Dp? = null) {
                 }
             }
         }
-        Text(text = movie.title, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp, start = 2.dp))
     }
 }
