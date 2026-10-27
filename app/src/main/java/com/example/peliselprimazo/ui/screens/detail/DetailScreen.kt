@@ -41,6 +41,7 @@ import com.example.peliselprimazo.domain.model.CastMember
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.ui.components.AuthDialog
+import com.example.peliselprimazo.ui.components.MovieCardItem
 import com.example.peliselprimazo.ui.components.ParticleLoading
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,7 +49,8 @@ import com.example.peliselprimazo.ui.components.ParticleLoading
 fun DetailScreen(
     viewModel: DetailViewModel,
     onBack: () -> Unit,
-    onPlay: (String, String) -> Unit // Simplificado: solo necesitamos server y fileId
+    onPlay: (String, String) -> Unit,
+    onMovieClick: (Int) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isPreloading by viewModel.preloadingVideo.collectAsState()
@@ -57,6 +59,7 @@ fun DetailScreen(
     val isViendo by viewModel.isViendo.collectAsState()
     val isTerminado by viewModel.isTerminado.collectAsState()
     val isVerDespues by viewModel.isVerDespues.collectAsState()
+    val similarContent by viewModel.similarContent.collectAsState()
     
     val user by viewModel.user.collectAsState()
     
@@ -108,6 +111,7 @@ fun DetailScreen(
                 is DetailUiState.Success -> {
                     DetailContent(
                         movie = state.movie,
+                        similarContent = similarContent,
                         isServerOnline = isServerOnline,
                         isFavorito = isFavorito,
                         isViendo = isViendo,
@@ -135,7 +139,8 @@ fun DetailScreen(
                                     showEpisodeSheet = true
                                 }
                             }
-                        }
+                        },
+                        onMovieClick = onMovieClick
                     )
 
                     if (showEpisodeSheet) {
@@ -251,6 +256,7 @@ fun DetailScreen(
 @Composable
 fun DetailContent(
     movie: Movie,
+    similarContent: List<Movie>,
     isServerOnline: Boolean,
     isFavorito: Boolean,
     isViendo: Boolean,
@@ -261,7 +267,8 @@ fun DetailContent(
     onTerminadoToggle: () -> Unit,
     onVerDespuesToggle: () -> Unit,
     onTrailerClick: (String) -> Unit,
-    onPlayButtonClick: () -> Unit
+    onPlayButtonClick: () -> Unit,
+    onMovieClick: (Int) -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item { HeaderSection(movie, isServerOnline, onPlayButtonClick) }
@@ -283,8 +290,24 @@ fun DetailContent(
         if (movie.cast.isNotEmpty()) {
             item { CastSection(movie.cast) }
         }
+
+        if (similarContent.isNotEmpty()) {
+            item { SimilarContentSection(similarContent, onMovieClick) }
+        }
         
         item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+}
+
+@Composable
+fun SimilarContentSection(movies: List<Movie>, onMovieClick: (Int) -> Unit) {
+    Column(modifier = Modifier.padding(top = 16.dp)) {
+        Text("Contenido Similar", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(movies, key = { it.id }) { movie ->
+                MovieCardItem(movie = movie, onClick = onMovieClick, width = 110.dp)
+            }
+        }
     }
 }
 
@@ -397,16 +420,16 @@ fun InfoSection(movie: Movie, onTrailerClick: (String) -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             color = Color.LightGray,
             lineHeight = 22.sp,
-            maxLines = if (isExpanded) Int.MAX_VALUE else 5,
+            maxLines = if (isExpanded) Int.MAX_VALUE else 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.clickable { isExpanded = !isExpanded }.animateContentSize()
         )
         
-        if (movie.overview.length > 150) {
+        if (movie.overview.length > 100) {
             Text(
-                text = if (isExpanded) "Ver menos" else "Leer más...",
+                text = if (isExpanded) "Mostrar menos" else "Leer más",
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 4.dp).clickable { isExpanded = !isExpanded }
             )

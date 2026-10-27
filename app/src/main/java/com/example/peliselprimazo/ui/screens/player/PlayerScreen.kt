@@ -639,6 +639,44 @@ fun NativePlayer(
                         modifier = Modifier.weight(1f)
                     )
 
+                    // Botón Minimizar (Modo PiP)
+                    val activity = LocalContext.current as? Activity
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        Surface(
+                            onClick = {
+                                try {
+                                    val params = android.app.PictureInPictureParams.Builder().build()
+                                    activity?.enterPictureInPictureMode(params)
+                                } catch (e: Exception) {
+                                    Log.e("PiP", "Error entering PiP: ${e.message}")
+                                }
+                            },
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AspectRatio,
+                                    contentDescription = "Minimizar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Minimizar",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
                     // 1. Selector de Velocidad de Reproducción
                     var currentSpeed by remember { mutableFloatStateOf(1.0f) }
                     var showSpeedMenu by remember { mutableStateOf(false) }

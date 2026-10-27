@@ -60,6 +60,16 @@ class DetailViewModel @Inject constructor(
     val isVerDespues = repository.isMovieInWatchLater(movieId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val similarContent: StateFlow<List<Movie>> = repository.getAllContent().map { list ->
+        val currentMovie = (_uiState.value as? DetailUiState.Success)?.movie
+        list.filter { movie ->
+            movie.id != movieId && (
+                (currentMovie != null && movie.contentType == currentMovie.contentType) ||
+                movie.genres.any { genre -> currentMovie?.genres?.contains(genre) == true }
+            )
+        }.take(10)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         loadMovieDetail()
     }

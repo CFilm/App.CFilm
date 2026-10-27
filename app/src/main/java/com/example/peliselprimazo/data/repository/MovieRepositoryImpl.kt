@@ -248,25 +248,7 @@ class MovieRepositoryImpl @Inject constructor(
                     val id = (info.cleanTitle + (info.year ?: "")).hashCode()
                     val existing = movieDao.getMovieById(id)
 
-                    val tmdbId = if (existing != null && existing.posterUrl != null) {
-                        null
-                    } else {
-                        tmdbSemaphore.withPermit {
-                            try {
-                                if (tmdbApiKey.isNotBlank()) {
-                                    if (info.isTv || info.isAnime) {
-                                        tmdbApi.searchTv(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
-                                            ?: tmdbApi.searchTv(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
-                                            ?: tmdbApi.searchTv(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
-                                    } else {
-                                        tmdbApi.searchMovie(info.cleanTitle, info.year, "es-MX").results.firstOrNull()?.id
-                                            ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "en-US").results.firstOrNull()?.id
-                                            ?: tmdbApi.searchMovie(info.cleanTitle, info.year, "ja-JP").results.firstOrNull()?.id
-                                    }
-                                } else null
-                            } catch (_: Exception) { null }
-                        }
-                    }
+                    val tmdbId: Int? = null // Pass 1: Instant load without blocking TMDB searches
 
                     Triple(info, link, tmdbId)
                 }
@@ -294,70 +276,9 @@ class MovieRepositoryImpl @Inject constructor(
                         val id = (primaryInfo.cleanTitle + (primaryInfo.year ?: "")).hashCode()
                         activeMovieIds.add(id)
 
-                        val seasons = allLinks.mapNotNull { it.season }.distinct()
-                        val episodeThumbnails = mutableMapOf<Pair<Int, Int>, Pair<String?, String?>>()
-
-                        if ((primaryInfo.isTv || primaryInfo.isAnime) && tmdbApiKey.isNotBlank() && seasons.isNotEmpty()) {
-                            tmdbSemaphore.withPermit {
-                                try {
-                                    val tvId = tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "es-MX").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "en-US").results.firstOrNull()?.id
-                                        ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "ja-JP").results.firstOrNull()?.id
-
-                                    if (tvId != null) {
-                                        seasons.forEach { seasonNum ->
-                                            try {
-                                                val seasonDetail = tmdbApi.getTvSeasonDetails(tvId, seasonNum)
-                                                seasonDetail.episodes?.forEach { ep ->
-                                                    if (ep.seasonNumber != null && ep.episodeNumber != null) {
-                                                        val thumb = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
-                                                        episodeThumbnails[ep.seasonNumber to ep.episodeNumber] = thumb to ep.name
-                                                    }
-                                                }
-                                            } catch (_: Exception) {}
-                                        }
-                                    }
-                                } catch (_: Exception) {}
-                            }
-                        }
-
-                        val enrichedLinks = allLinks.map { link ->
-                            val s = link.season
-                            val e = link.episode
-                            if (s != null && e != null) {
-                                val infoThumb = episodeThumbnails[s to e]
-                                link.copy(
-                                    thumbnailUri = infoThumb?.first ?: link.thumbnailUri,
-                                    episodeTitle = infoThumb?.second ?: link.episodeTitle
-                                )
-                            } else {
-                                link
-                            }
-                        }
-
                         val existing = movieDao.getMovieById(id)
-                        val maxSeason = allLinks.mapNotNull { it.season }.maxOrNull()
-                        
-                        val tmdbData = if (existing?.posterUrl != null && existing.overview.isNotBlank() && existing.posterUrl.startsWith("http")) {
-                            TmdbData(
-                                title = existing.title,
-                                overview = existing.overview,
-                                posterUrl = existing.posterUrl,
-                                backdropUrl = existing.backdropUrl,
-                                releaseDate = existing.releaseDate,
-                                rating = existing.rating,
-                                genres = existing.genres,
-                                trailerUrl = existing.trailerUrl,
-                                cast = existing.cast,
-                                duration = existing.duration
-                            )
-                        } else {
-                            tmdbSemaphore.withPermit {
-                                try {
-                                    if (tmdbApiKey.isNotBlank()) fetchTmdbData(primaryInfo, maxSeason) else null
-                                } catch (_: Exception) { null }
-                            }
-                        }
+                        val existingNonStreamtape = existing?.serverLinks?.filter { !it.serverName.equals("Streamtape", true) } ?: emptyList()
+                        val mergedLinks = (allLinks + existingNonStreamtape).distinctBy { "${it.serverName}_${it.fileId}" }
 
                         val isLiked = if (remoteData != null) remoteData.liked.contains(id) else existing?.isLiked ?: false
                         val isSaved = if (remoteData != null) remoteData.saved.contains(id) else existing?.isSaved ?: false
@@ -372,25 +293,25 @@ class MovieRepositoryImpl @Inject constructor(
 
                         MovieEntity(
                             id = id,
-                            title = tmdbData?.title ?: primaryInfo.cleanTitle.capitalizeWords(),
-                            overview = tmdbData?.overview ?: existing?.overview ?: "Contenido disponible.",
-                            posterUrl = tmdbData?.posterUrl ?: existing?.posterUrl,
-                            backdropUrl = tmdbData?.backdropUrl ?: existing?.backdropUrl,
-                            releaseDate = tmdbData?.releaseDate ?: primaryInfo.year ?: "Desconocido",
-                            rating = tmdbData?.rating ?: existing?.rating ?: 0.0,
-                            serverLinks = enrichedLinks,
+                            title = existing?.title ?: primaryInfo.cleanTitle.capitalizeWords(),
+                            overview = existing?.overview ?: "Cargando metadatos...",
+                            posterUrl = existing?.posterUrl,
+                            backdropUrl = existing?.backdropUrl,
+                            releaseDate = existing?.releaseDate ?: primaryInfo.year ?: "Desconocido",
+                            rating = existing?.rating ?: 0.0,
+                            serverLinks = mergedLinks,
                             contentType = when {
                                 primaryInfo.isAnime -> ContentType.ANIME.name
                                 primaryInfo.isTv -> ContentType.TV.name
                                 else -> ContentType.MOVIE.name
                             },
-                            genres = tmdbData?.genres ?: existing?.genres ?: emptyList(),
-                            year = tmdbData?.releaseDate?.take(4) ?: primaryInfo.year,
-                            trailerUrl = tmdbData?.trailerUrl ?: existing?.trailerUrl,
-                            cast = tmdbData?.cast ?: existing?.cast ?: emptyList(),
+                            genres = existing?.genres ?: emptyList(),
+                            year = primaryInfo.year,
+                            trailerUrl = existing?.trailerUrl,
+                            cast = existing?.cast ?: emptyList(),
                             season = primaryInfo.season,
                             episode = primaryInfo.episode,
-                            duration = tmdbData?.duration ?: existing?.duration,
+                            duration = existing?.duration,
                             isLiked = isLiked,
                             isSaved = isSaved,
                             isWatchLater = isWatchLater,
@@ -414,6 +335,42 @@ class MovieRepositoryImpl @Inject constructor(
 
                 if (results.isNotEmpty() || inactiveEntities.isNotEmpty()) {
                     movieDao.insertMovies(results + inactiveEntities)
+                }
+
+                // Pass 2: Background Metadata Enrichment (TMDB calls run quietly in background)
+                launch(Dispatchers.IO) {
+                    val allStored = movieDao.getAllMoviesSync()
+                    allStored.forEach { entity ->
+                        try {
+                            if (entity.posterUrl.isNullOrBlank() || entity.overview == "Cargando metadatos...") {
+                                val info = InternalFileInfo(
+                                    cleanTitle = entity.title,
+                                    year = entity.year,
+                                    season = entity.season,
+                                    episode = entity.episode,
+                                    isTv = entity.contentType == ContentType.TV.name,
+                                    isAnime = entity.contentType == ContentType.ANIME.name,
+                                    language = "Latino"
+                                )
+                                val maxSeason = entity.serverLinks.mapNotNull { it.season }.maxOrNull()
+                                val tmdbData = fetchTmdbData(info, maxSeason)
+                                if (tmdbData != null) {
+                                    val updated = entity.copy(
+                                        title = tmdbData.title,
+                                        overview = tmdbData.overview,
+                                        posterUrl = tmdbData.posterUrl ?: entity.posterUrl,
+                                        backdropUrl = tmdbData.backdropUrl ?: entity.backdropUrl,
+                                        rating = tmdbData.rating,
+                                        genres = tmdbData.genres,
+                                        trailerUrl = tmdbData.trailerUrl,
+                                        cast = tmdbData.cast,
+                                        duration = tmdbData.duration
+                                    )
+                                    movieDao.insertMovies(listOf(updated))
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("PrimazoSync", "Error en actualización: ${e.message}")

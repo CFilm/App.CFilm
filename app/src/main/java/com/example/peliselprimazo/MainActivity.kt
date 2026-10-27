@@ -187,6 +187,9 @@ fun MainContent(
                         adsManager.showRewardedVideo(activity) {
                             navController.navigateToPlayer(server, fileId, movieId)
                         }
+                    },
+                    onMovieClick = { newId ->
+                        navController.navigate(Screen.Detail.createRoute(newId))
                     }
                 )
             }

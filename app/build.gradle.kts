@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.peliselprimazo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "2.4.14"
+        versionCode = 14
+        versionName = "2.4.15"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -120,6 +120,9 @@ dependencies {
     implementation(libs.unity.ads)
 
     testImplementation(libs.junit)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.mockito:mockito-core:5.12.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.ui.tooling)
