@@ -3,6 +3,7 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
     }
 }
 dependencyResolutionManagement {
@@ -11,8 +12,10 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://android-sdk.is.com/") }
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
     }
 }
 
 rootProject.name = "CFilm"
 include(":app")
+include(":desktop")

@@ -7,18 +7,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -39,31 +35,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import com.example.peliselprimazo.ui.components.*
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.example.peliselprimazo.R
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.model.User
-import com.example.peliselprimazo.ui.components.AuthDialog
-import com.example.peliselprimazo.ui.components.ParticleLoading
+import com.example.peliselprimazo.ui.components.*
+import com.example.peliselprimazo.ui.screens.home.components.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +100,6 @@ fun HomeScreen(
     var pendingMovieToPlay by remember { mutableStateOf<Movie?>(null) }
     var showUpdateDialog by rememberSaveable { mutableStateOf(true) }
 
-    // DETALLES DINÁMICOS
     val appTitle = updateConfig?.visualFlags?.get("ui_app_title") ?: "CFilm"
     val homeAnnouncement = updateConfig?.visualFlags?.get("ui_home_announcement")
     val loadingText = updateConfig?.visualFlags?.get("ui_loading_text") ?: "Preparando el cine..."
@@ -238,100 +225,22 @@ fun HomeScreen(
             }
         }
 
-        // Top bar
+        // Top Bar
         if (!isSearchActive) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(start = 12.dp, end = 12.dp, top = 0.dp)
-                    .zIndex(5f),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                if (isLoading || isRefreshing) {
-                    Surface(
-                        modifier = Modifier
-                            .padding(top = 65.dp)
-                            .clip(RoundedCornerShape(16.dp)),
-                        color = Color.Black.copy(alpha = 0.9f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
-                        shadowElevation = 8.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 2.5.dp
-                            )
-                            Text(
-                                text = "Actualizando contenido...",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)), 
-                    color = Color.Black.copy(alpha = 0.75f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = appTitle,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp
-                            )
-                        }
-                        IconButton(onClick = { viewModel.onSearchActiveChange(true) }) {
-                            Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color.White)
-                        }
-                    }
-                }
-            }
+            TopBarHeader(
+                appTitle = appTitle,
+                isLoading = isLoading,
+                isRefreshing = isRefreshing,
+                onSearchClick = { viewModel.onSearchActiveChange(true) },
+                modifier = Modifier.zIndex(5f)
+            )
         } else {
-            Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(start = 12.dp, end = 12.dp, top = 0.dp).zIndex(5f)) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(25.dp)),
-                    color = Color.Black.copy(alpha = 0.9f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-                ) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        placeholder = { Text("¿Qué quieres ver hoy?", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.onSearchActiveChange(false) }) {
-                                Icon(Icons.Default.Close, contentDescription = null, tint = Color.White)
-                            }
-                        },
-                        singleLine = true
-                    )
-                }
-            }
+            TopSearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                onCloseClick = { viewModel.onSearchActiveChange(false) },
+                modifier = Modifier.zIndex(5f)
+            )
         }
 
         // Overlay central para pre-extracción de video
@@ -468,202 +377,7 @@ fun HomeScreen(
 
         // Blocking Update Progress Dialog
         if (isDownloading) {
-            Dialog(
-                onDismissRequest = { },
-                properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    color = Color(0xFF1A1A1A),
-                    shape = RoundedCornerShape(24.dp),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        ParticleLoading(size = 120.dp)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Actualizando CFilm",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Black
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Por favor, espera mientras se descarga la nueva versión. La aplicación se instalará automáticamente al finalizar.",
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-                        
-                        Box(contentAlignment = Alignment.Center) {
-                            LinearProgressIndicator(
-                                progress = { downloadProgress },
-                                modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = Color.White.copy(alpha = 0.1f),
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Text(
-                            text = "${(downloadProgress * 100).toInt()}%",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SearchContent(
-    query: String,
-    history: List<String>,
-    results: List<Movie>,
-    viewModel: HomeViewModel,
-    onQueryChange: (String) -> Unit,
-    onMovieClick: (Int) -> Unit,
-    onClearHistory: () -> Unit
-) {
-    val searchType by viewModel.searchTypeFilter.collectAsState()
-    val searchGenre by viewModel.searchGenreFilter.collectAsState()
-    val searchRating by viewModel.searchRatingFilter.collectAsState()
-    val searchYear by viewModel.searchYearFilter.collectAsState()
-
-    val hasActiveFilters = searchType != "ALL" || searchGenre != null || searchRating != null || searchYear != null
-
-    Column(modifier = Modifier.fillMaxSize().padding(top = 80.dp)) {
-        // Barra de Filtros Avanzados
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            item {
-                FilterChip(
-                    selected = searchType == "ALL",
-                    onClick = { viewModel.setSearchTypeFilter("ALL") },
-                    label = { Text("Todos") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = searchType == "MOVIE",
-                    onClick = { viewModel.setSearchTypeFilter(if (searchType == "MOVIE") "ALL" else "MOVIE") },
-                    label = { Text("🎬 Películas") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = searchType == "TV",
-                    onClick = { viewModel.setSearchTypeFilter(if (searchType == "TV") "ALL" else "TV") },
-                    label = { Text("📺 Series") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-
-            item {
-                FilterChip(
-                    selected = searchRating == 7.0,
-                    onClick = { viewModel.setSearchRatingFilter(if (searchRating == 7.0) null else 7.0) },
-                    label = { Text("⭐ 7.0+") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = searchRating == 8.0,
-                    onClick = { viewModel.setSearchRatingFilter(if (searchRating == 8.0) null else 8.0) },
-                    label = { Text("⭐ 8.0+") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-
-            val years = listOf("2024", "2023", "2022", "2021", "2020")
-            items(years) { y ->
-                FilterChip(
-                    selected = searchYear == y,
-                    onClick = { viewModel.setSearchYearFilter(if (searchYear == y) null else y) },
-                    label = { Text(y) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-
-            val genres = listOf("Acción", "Comedia", "Terror", "Ciencia Ficción", "Drama", "Suspenso", "Aventura", "Animación", "Fantasía")
-            items(genres) { g ->
-                FilterChip(
-                    selected = searchGenre == g,
-                    onClick = { viewModel.setSearchGenreFilter(if (searchGenre == g) null else g) },
-                    label = { Text(g) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.Black
-                    )
-                )
-            }
-
-            if (hasActiveFilters) {
-                item {
-                    TextButton(onClick = { viewModel.resetSearchFilters() }) {
-                        Text("Limpiar filtros", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        if (query.isBlank() && !hasActiveFilters) {
-            if (history.isNotEmpty()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Búsquedas recientes", color = Color.White, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = onClearHistory) {
-                        Text("Limpiar", color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                LazyColumn {
-                    items(history) { item ->
-                        ListItem(
-                            headlineContent = { Text(item, color = Color.LightGray) },
-                            leadingContent = { Icon(Icons.Rounded.History, contentDescription = null, tint = Color.Gray) },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.clickable { onQueryChange(item) }
-                        )
-                    }
-                }
-            } else {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Busca tus películas o series favoritas por nombre, género o año", color = Color.Gray)
-                }
-            }
-        } else {
-            SearchGrid(results, onMovieClick)
+            DownloadProgressDialog(downloadProgress = (downloadProgress * 100).toInt())
         }
     }
 }
@@ -928,66 +642,6 @@ fun ProfileListDetail(title: String, items: List<Movie>, onBack: () -> Unit, onM
         if (items.isEmpty()) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = "No hay nada aquí todavía", color = Color.Gray) } } else {
             LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(items, key = { it.id }) { movie -> MovieCardItem(movie, onClick = onMovieClick) }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryBubbleItem(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.clip(RoundedCornerShape(25.dp)).clickable { onClick() }, 
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, 
-        contentColor = if (selected) Color.Black else Color.White
-    ) {
-        Text(
-            text = label, 
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp), 
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-fun HomeSectionsContent(sections: List<HomeSection>, onMovieClick: (Int) -> Unit, onDirectPlayClick: (Movie) -> Unit, announcement: String? = null) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 80.dp, bottom = 120.dp)) {
-        if (!announcement.isNullOrBlank()) {
-            item {
-                Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(12.dp))
-                        Text(text = announcement, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-        itemsIndexed(sections, key = { _, section -> section.title }) { _, section ->
-            Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                Text(text = section.title, color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp))
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(section.items, key = { it.id }) { movie -> 
-                        if (section.isWatchingSection) { WatchingCardItem(movie) { onDirectPlayClick(movie) } } else { MovieCardItem(movie, { onMovieClick(it) }, width = 130.dp) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryTabContent(sections: List<HomeSection>, filteredList: List<Movie>, selectedGenre: String?, onMovieClick: (Int) -> Unit) {
-    if (selectedGenre != null) { VerticalMovieGrid(movies = filteredList, onMovieClick = onMovieClick) } else {
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 80.dp, bottom = 120.dp)) {
-            itemsIndexed(sections, key = { _, section -> section.title }) { _, section ->
-                Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                    Text(text = section.title, color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp))
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(section.items, key = { it.id }) { movie -> MovieCardItem(movie, { onMovieClick(it) }, width = 130.dp) }
-                    }
-                }
             }
         }
     }

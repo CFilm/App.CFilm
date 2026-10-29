@@ -56,6 +56,8 @@ import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.ui.components.ParticleLoading
+import com.example.peliselprimazo.ui.screens.player.components.VerticalProgressBar
+import com.example.peliselprimazo.ui.screens.player.components.formatMillis
 import com.google.android.gms.cast.framework.CastButtonFactory
 import kotlinx.coroutines.delay
 
@@ -212,30 +214,6 @@ fun PlayerScreen(
     }
 }
 
-@Composable
-fun VerticalProgressBar(
-    progress: Float,
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
-    trackColor: Color = Color.White.copy(alpha = 0.2f)
-) {
-    Box(
-        modifier = modifier
-            .width(8.dp)
-            .clip(CircleShape)
-            .background(trackColor),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(progress.coerceIn(0f, 1f))
-                .clip(CircleShape)
-                .background(color)
-        )
-    }
-}
-
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun NativePlayer(
@@ -327,7 +305,6 @@ fun NativePlayer(
         }
     }
 
-    // Detectar últimos 90 segundos (1.5 min) donde típicamente inician los créditos
     val remainingMillis = if (duration > 0) duration - currentPosition else Long.MAX_VALUE
     val isNearEnd = isSeries && onNext != null && duration > 60000L && remainingMillis in 1L..90000L && !autoNextCanceled
 
@@ -640,7 +617,6 @@ fun NativePlayer(
                     )
 
                     // Botón Minimizar (Modo PiP)
-                    val activity = LocalContext.current as? Activity
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         Surface(
                             onClick = {
@@ -677,7 +653,7 @@ fun NativePlayer(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
 
-                    // 1. Selector de Velocidad de Reproducción
+                    // Selector de Velocidad
                     var currentSpeed by remember { mutableFloatStateOf(1.0f) }
                     var showSpeedMenu by remember { mutableStateOf(false) }
 
@@ -735,7 +711,7 @@ fun NativePlayer(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    // 2. Botón Transmitir a TV (Google Cast)
+                    // Transmitir a TV
                     Box(
                         modifier = Modifier
                             .background(Color.Black.copy(alpha = 0.6f), CircleShape)
@@ -980,18 +956,5 @@ fun NativePlayer(
                 }
             }
         }
-    }
-}
-
-fun formatMillis(millis: Long): String {
-    if (millis <= 0) return "00:00"
-    val totalSeconds = millis / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
     }
 }

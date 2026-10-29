@@ -69,36 +69,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @Named("JellyfinRetrofit")
-    fun provideJellyfinRetrofit(loggingInterceptor: HttpLoggingInterceptor): Retrofit {
-        val jellyfinClient = OkHttpClient.Builder()
-            .connectTimeout(NetworkConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(NetworkConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .writeTimeout(NetworkConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .addInterceptor(loggingInterceptor)
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val url = original.url.newBuilder()
-                    .addQueryParameter("api_key", JellyfinApi.API_KEY)
-                    .build()
-                val request = original.newBuilder()
-                    .url(url)
-                    .header("X-Emby-Token", JellyfinApi.API_KEY)
-                    .header("Authorization", "MediaBrowser Token=\"${JellyfinApi.API_KEY}\"")
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl(JellyfinApi.BASE_URL)
-            .client(jellyfinClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    @Provides
-    @Singleton
     @Named("TmdbRetrofit")
     fun provideTmdbRetrofit(loggingInterceptor: HttpLoggingInterceptor): Retrofit {
         val tmdbClient = OkHttpClient.Builder()
@@ -136,12 +106,6 @@ object NetworkModule {
     @Singleton
     fun provideStreamtapeApi(@Named("StreamtapeRetrofit") retrofit: Retrofit): StreamtapeApi {
         return retrofit.create(StreamtapeApi::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideJellyfinApi(@Named("JellyfinRetrofit") retrofit: Retrofit): JellyfinApi {
-        return retrofit.create(JellyfinApi::class.java)
     }
 
     @Provides

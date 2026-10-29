@@ -8,5 +8,6 @@ data class ServerLink(
     val episode: Int? = null,
     val episodeTitle: String? = null,
     val language: String = "Latino",
-    val thumbnailUri: String? = null
+    val thumbnailUri: String? = null,
+    val overview: String? = null
 )
