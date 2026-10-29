@@ -134,19 +134,40 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDownloadUrl(serverName: String, fileId: String): String? {
-        if (serverName.equals("Streamtape", ignoreCase = true)) {
+        Log.d("MovieRepository", "Resolving stream URL for server=$serverName, fileId=$fileId")
+
+        if (fileId.startsWith("http://", ignoreCase = true) || fileId.startsWith("https://", ignoreCase = true)) {
+            return fileId
+        }
+
+        if (serverName.contains("Streamtape", ignoreCase = true) || streamtapeLogin.isNotBlank()) {
             try {
+                Log.d("StreamtapeApi", "Requesting download ticket for fileId=$fileId")
                 val ticketResp = streamtapeApi.getDownloadTicket(fileId, streamtapeLogin, streamtapeKey)
-                val ticket = ticketResp.result?.ticket
+                Log.d("StreamtapeApi", "Ticket status=${ticketResp.status}, msg=${ticketResp.msg}, result=${ticketResp.result}")
+
+                val result = ticketResp.result
+                val ticket = result?.ticket
                 if (ticket != null) {
-                    delay(1000)
+                    val waitSeconds = result.waitTime.coerceAtLeast(1)
+                    val waitMs = (waitSeconds * 1000L) + 500L
+                    Log.d("StreamtapeApi", "Streamtape ticket acquired. Waiting ${waitMs}ms before requesting link...")
+                    delay(waitMs)
+
                     val dlResp = streamtapeApi.getDownloadLink(fileId, ticket)
-                    return dlResp.result?.url
+                    Log.d("StreamtapeApi", "Download link status=${dlResp.status}, msg=${dlResp.msg}, url=${dlResp.result?.url}")
+                    val url = dlResp.result?.url
+                    if (!url.isNullOrBlank()) {
+                        return url
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("MovieRepository", "Error getting Streamtape link: ${e.message}")
+                Log.e("MovieRepository", "Error resolving Streamtape link: ${e.message}", e)
             }
+
+            return "https://streamtape.com/get_video?id=$fileId"
         }
+
         return null
     }
 
