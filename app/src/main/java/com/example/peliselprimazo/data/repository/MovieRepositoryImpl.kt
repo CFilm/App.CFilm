@@ -201,7 +201,7 @@ class MovieRepositoryImpl @Inject constructor(
                         info = info.copy(isTv = false, isAnime = false)
                     }
 
-                    val id = (info.cleanTitle + (info.year ?: "")).hashCode()
+                    val id = getStableMovieId(info.cleanTitle, info.year, info.isTv, info.isAnime)
                     Triple(info, link, id)
                 }
 
@@ -226,7 +226,7 @@ class MovieRepositoryImpl @Inject constructor(
                     async(Dispatchers.IO) {
                         val primaryInfo = items.first().first
                         val allLinks = items.map { it.second }.distinctBy { "${it.serverName}_${it.fileId}" }
-                        val id = (primaryInfo.cleanTitle + (primaryInfo.year ?: "")).hashCode()
+                        val id = getStableMovieId(primaryInfo.cleanTitle, primaryInfo.year, primaryInfo.isTv, primaryInfo.isAnime)
                         activeMovieIds.add(id)
 
                         val existing = movieDao.getMovieById(id)
@@ -716,4 +716,16 @@ class MovieRepositoryImpl @Inject constructor(
     )
 
     private fun String.capitalizeWords() = split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+
+    private fun getStableMovieId(cleanTitle: String, year: String?, isTv: Boolean, isAnime: Boolean): Int {
+        val titleLower = cleanTitle.lowercase()
+            .replace(Regex("[-–—:]"), " ")
+            .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+|santen|sensou)\\b.*"), "")
+            .replace(Regex("[^a-z0-9]"), " ")
+            .trim()
+        val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
+        val stableKey = if (isTv || isAnime) "tv|$baseKey" else "movie|$baseKey|${year ?: "unknown"}"
+        return stableKey.hashCode()
+    }
 }
