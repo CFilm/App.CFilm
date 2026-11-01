@@ -563,6 +563,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun prefetchStream(server: String, fileId: String) {
+        viewModelScope.launch {
+            try {
+                getStreamUrlUseCase(server, fileId)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error prefetching stream: ${e.message}")
+            }
+        }
+    }
+
     fun prepareAndPlay(movie: Movie, onReady: (String) -> Unit) {
         val firstLink = movie.serverLinks.firstOrNull() ?: return
         viewModelScope.launch {

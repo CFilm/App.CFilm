@@ -133,11 +133,19 @@ class MovieRepositoryImpl @Inject constructor(
         return movieDao.getMovieById(id)?.toDomain()
     }
 
+    private val streamUrlCache = mutableMapOf<String, Pair<String, Long>>()
+
     override suspend fun getDownloadUrl(serverName: String, fileId: String): String? {
         Log.d("MovieRepository", "Resolving stream URL for server=$serverName, fileId=$fileId")
 
         if (fileId.startsWith("http://", ignoreCase = true) || fileId.startsWith("https://", ignoreCase = true)) {
             return fileId
+        }
+
+        val cached = streamUrlCache[fileId]
+        if (cached != null && System.currentTimeMillis() - cached.second < 30 * 60 * 1000L) {
+            Log.d("MovieRepository", "Returning cached stream URL for fileId=$fileId")
+            return cached.first
         }
 
         if (serverName.contains("Streamtape", ignoreCase = true) || streamtapeLogin.isNotBlank()) {
@@ -158,6 +166,7 @@ class MovieRepositoryImpl @Inject constructor(
                     Log.d("StreamtapeApi", "Download link status=${dlResp.status}, msg=${dlResp.msg}, url=${dlResp.result?.url}")
                     val url = dlResp.result?.url
                     if (!url.isNullOrBlank()) {
+                        streamUrlCache[fileId] = url to System.currentTimeMillis()
                         return url
                     }
                 }
@@ -165,7 +174,9 @@ class MovieRepositoryImpl @Inject constructor(
                 Log.e("MovieRepository", "Error resolving Streamtape link: ${e.message}", e)
             }
 
-            return "https://streamtape.com/get_video?id=$fileId"
+            val fallbackUrl = "https://streamtape.com/get_video?id=$fileId"
+            streamUrlCache[fileId] = fallbackUrl to System.currentTimeMillis()
+            return fallbackUrl
         }
 
         return null

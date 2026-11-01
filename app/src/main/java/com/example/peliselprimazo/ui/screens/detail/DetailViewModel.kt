@@ -95,6 +95,16 @@ class DetailViewModel @Inject constructor(
         adsManager.showRewardedVideo(activity, placementName, onReward)
     }
 
+    fun prefetchStream(server: String, fileId: String) {
+        viewModelScope.launch {
+            try {
+                getStreamUrlUseCase(server, fileId)
+            } catch (e: Exception) {
+                Log.e("DetailViewModel", "Error prefetching stream: ${e.message}")
+            }
+        }
+    }
+
     fun prepareAndPlay(
         server: String, 
         fileId: String, 

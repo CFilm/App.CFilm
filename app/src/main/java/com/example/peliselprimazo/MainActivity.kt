@@ -177,6 +177,7 @@ fun MainContent(
                     onMovieClick = { movieId -> navController.navigate(Screen.Detail.createRoute(movieId)) },
                     onDirectPlayClick = { movie ->
                         movie.serverLinks.firstOrNull()?.let { link ->
+                            homeViewModel.prefetchStream(link.serverName, link.fileId)
                             adsManager.showRewardedVideo(activity) {
                                 navController.navigateToPlayer(link.serverName, link.fileId, movie.id)
                             }
@@ -195,6 +196,7 @@ fun MainContent(
                     viewModel = detailViewModel,
                     onBack = { navController.popBackStack() },
                     onPlay = { server, fileId -> 
+                        detailViewModel.prefetchStream(server, fileId)
                         adsManager.showRewardedVideo(activity) {
                             navController.navigateToPlayer(server, fileId, movieId)
                         }
