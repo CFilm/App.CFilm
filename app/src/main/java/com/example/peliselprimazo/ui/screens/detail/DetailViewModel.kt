@@ -81,6 +81,9 @@ class DetailViewModel @Inject constructor(
                 val movie = getMovieDetailUseCase(movieId)
                 if (movie != null) {
                     _uiState.value = DetailUiState.Success(movie)
+                    movie.serverLinks.firstOrNull()?.let { link ->
+                        prefetchStream(link.serverName, link.fileId)
+                    }
                 } else {
                     _uiState.value = DetailUiState.Error("No se encontró el contenido")
                 }
