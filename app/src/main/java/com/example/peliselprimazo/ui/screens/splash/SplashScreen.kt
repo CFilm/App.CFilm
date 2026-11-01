@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -83,7 +82,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     // Fase 3: Aparición de la imagen del logotipo tras la explosión (5.3s en adelante)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.5f) 1f else 0f,
+        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -133,47 +132,47 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 }
             }
 
-            // 2. Onda expansiva de la explosión (Shockwave / Flash)
+            // 2. Onda expansiva de la explosión (Shockwave / Flash cubriendo la pantalla)
             if (flash > 0f) {
-                val shockwaveRadius = flash * 550f
+                val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.2f
                 val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
                 drawCircle(
-                    color = Color.White.copy(alpha = shockwaveAlpha * 0.85f),
-                    radius = shockwaveRadius * 0.5f,
+                    color = Color.White.copy(alpha = shockwaveAlpha * 0.9f),
+                    radius = shockwaveRadius * 0.6f,
                     center = Offset(centerX, centerY)
                 )
                 drawCircle(
                     color = neonBlue.copy(alpha = shockwaveAlpha),
                     radius = shockwaveRadius,
                     center = Offset(centerX, centerY),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 14.dp.toPx() * (1f - flash))
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20.dp.toPx() * (1f - flash))
                 )
             }
         }
 
-        // Resplandor ambiental posterior a la explosión
-        val glowAlpha by animateFloatAsState(
-            targetValue = if (logoAlpha.value > 0f) 0.75f else 0f,
+        // Resplandor ambiental en LOS BORDES DE LA PANTALLA (Screen Edge Glow / Vignette)
+        val edgeGlowAlpha by animateFloatAsState(
+            targetValue = if (logoAlpha.value > 0f) 0.85f else 0f,
             animationSpec = tween(800),
-            label = "glow"
+            label = "edge_glow"
         )
 
         Box(
             modifier = Modifier
-                .size(450.dp)
-                .alpha(glowAlpha)
+                .fillMaxSize()
+                .alpha(edgeGlowAlpha)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            neonBlue.copy(alpha = 0.65f),
-                            Color.Transparent
-                        )
+                            Color.Transparent,
+                            neonBlue.copy(alpha = 0.45f)
+                        ),
+                        radius = 1200f
                     )
                 )
-                .blur(90.dp)
         )
 
-        // Imagen oficial del logotipo que emerge de la explosión (R.mipmap.app_logo)
+        // Imagen oficial del logotipo que emerge de la explosión en el centro
         Image(
             painter = painterResource(id = R.mipmap.app_logo),
             contentDescription = "Logo CFilm",
