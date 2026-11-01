@@ -50,8 +50,8 @@ object FirebaseModule {
             "ui_home_announcement" to "",
             "ui_app_logo_url" to "",
             "ui_player_ad_vast_url" to "https://v.mybid.io/api/vast?t=1&id=113063",
-            "latest_version_code" to 15,
-            "latest_version_name" to "2.4.16"
+            "latest_version_code" to 16,
+            "latest_version_name" to "2.4.17"
         ))
         return remoteConfig
     }
