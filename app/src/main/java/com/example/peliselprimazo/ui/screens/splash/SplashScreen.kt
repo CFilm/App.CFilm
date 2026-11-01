@@ -35,12 +35,12 @@ data class LogoParticle(
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    // Generar partículas cuyas posiciones objetivo forman la geometría exacta del logo de CFilm
+    // Generar partículas cuyas posiciones objetivo forman la geometría exacta del logo de CFilm (orientado a la derecha)
     val particles = remember {
         val list = mutableListOf<LogoParticle>()
         val rand = Random(42)
 
-        // 1. Triángulo Exterior (Play Button Frame)
+        // 1. Triángulo Exterior (Play Button apuntando a la DERECHA)
         for (i in 0..80) {
             val t = i / 80f
             val x: Float
@@ -48,55 +48,55 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             if (t < 0.33f) {
                 val subT = t * 3f
                 x = -120f
-                y = -130f + subT * 260f
+                y = -110f + subT * 220f
             } else if (t < 0.66f) {
                 val subT = (t - 0.33f) * 3f
                 x = -120f + subT * 260f
-                y = 130f - subT * 130f
+                y = 110f - subT * 110f
             } else {
                 val subT = (t - 0.66f) * 3f
                 x = 140f - subT * 260f
-                y = 0f - subT * 130f
+                y = 0f - subT * 110f
             }
             addParticle(list, x, y, rand)
         }
 
-        // 2. Letra 'C'
-        for (i in 0..60) {
-            val angle = (i / 60f) * 1.55f * Math.PI.toFloat() + 0.75f
-            val radius = 68f
+        // 2. Letra 'C' (en la mitad izquierda)
+        for (i in 0..50) {
+            val angle = (i / 50f) * 1.55f * Math.PI.toFloat() + 0.8f
+            val radius = 55f
             val x = -40f + cos(angle) * radius
             val y = sin(angle) * radius
             addParticle(list, x, y, rand)
         }
 
-        // 3. Play Interno dentro de la 'C'
-        for (i in 0..35) {
-            val t = i / 35f
-            val x = -55f + t * 32f
-            val y = -22f + t * 44f * (if (t < 0.5f) t * 2f else (1f - t) * 2f)
+        // 3. Play Interno dentro de la 'C' (apuntando a la DERECHA ▶)
+        for (i in 0..30) {
+            val t = i / 30f
+            val x = -52f + t * 24f
+            val y = -18f + t * 36f * (if (t < 0.5f) t * 2f else (1f - t) * 2f)
             addParticle(list, x, y, rand)
         }
 
-        // 4. Letra 'F'
-        for (i in 0..60) {
-            val t = i / 60f
+        // 4. Letra 'F' (en la mitad derecha)
+        for (i in 0..50) {
+            val t = i / 50f
             val x: Float
             val y: Float
             if (t < 0.45f) {
                 // Barra vertical de la F
-                x = 38f
-                y = -75f + (t / 0.45f) * 150f
+                x = 25f
+                y = -50f + (t / 0.45f) * 100f
             } else if (t < 0.75f) {
                 // Barra superior de la F
                 val subT = (t - 0.45f) / 0.3f
-                x = 38f + subT * 60f
-                y = -75f
+                x = 25f + subT * 50f
+                y = -50f
             } else {
                 // Barra del medio de la F
                 val subT = (t - 0.75f) / 0.25f
-                x = 38f + subT * 48f
-                y = 0f
+                x = 25f + subT * 40f
+                y = -5f
             }
             addParticle(list, x, y, rand)
         }
@@ -158,12 +158,12 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             // 2. Trazos vectoriales exactos del logo al completarse el ensamblaje
             if (progress > 0.85f) {
                 val alpha = vectorGlowAlpha.value
-                val strokeWidth = 5.5.dp.toPx()
+                val strokeWidth = 5.dp.toPx()
 
-                // Triángulo exterior
+                // Triángulo Exterior (Apuntando a la DERECHA ▶)
                 val trianglePath = Path().apply {
-                    moveTo(centerX - 120f, centerY - 130f)
-                    lineTo(centerX - 120f, centerY + 130f)
+                    moveTo(centerX - 120f, centerY - 110f)
+                    lineTo(centerX - 120f, centerY + 110f)
                     lineTo(centerX + 140f, centerY)
                     close()
                 }
@@ -176,9 +176,9 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 // Letra C
                 val cPath = Path().apply {
                     addArc(
-                        oval = androidx.compose.ui.geometry.Rect(centerX - 105f, centerY - 68f, centerX + 25f, centerY + 68f),
-                        startAngleDegrees = 45f,
-                        sweepAngleDegrees = 270f
+                        oval = androidx.compose.ui.geometry.Rect(centerX - 95f, centerY - 55f, centerX + 15f, centerY + 55f),
+                        startAngleDegrees = 90f,
+                        sweepAngleDegrees = 180f
                     )
                 }
                 drawPath(
@@ -187,27 +187,30 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
 
-                // Play interno en la C
+                // Play interno en la C (Apuntando a la DERECHA ▶)
                 val playPath = Path().apply {
-                    moveTo(centerX - 55f, centerY - 22f)
-                    lineTo(centerX - 55f, centerY + 22f)
-                    lineTo(centerX - 20f, centerY)
+                    moveTo(centerX - 52f, centerY - 18f)
+                    lineTo(centerX - 52f, centerY + 18f)
+                    lineTo(centerX - 28f, centerY)
                     close()
                 }
                 drawPath(
                     path = playPath,
                     color = neonBlue.copy(alpha = alpha),
-                    style = Stroke(width = strokeWidth * 0.85f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    style = Stroke(width = strokeWidth * 0.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                 )
 
                 // Letra F
                 val fPath = Path().apply {
-                    moveTo(centerX + 38f, centerY - 75f)
-                    lineTo(centerX + 38f, centerY + 75f)
-                    moveTo(centerX + 38f, centerY - 75f)
-                    lineTo(centerX + 98f, centerY - 75f)
-                    moveTo(centerX + 38f, centerY)
-                    lineTo(centerX + 86f, centerY)
+                    // Barra vertical
+                    moveTo(centerX + 25f, centerY - 50f)
+                    lineTo(centerX + 25f, centerY + 50f)
+                    // Barra superior
+                    moveTo(centerX + 25f, centerY - 50f)
+                    lineTo(centerX + 75f, centerY - 50f)
+                    // Barra del medio
+                    moveTo(centerX + 25f, centerY - 5f)
+                    lineTo(centerX + 65f, centerY - 5f)
                 }
                 drawPath(
                     path = fPath,
@@ -219,24 +222,24 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
         // Resplandor ambiental
         val glowAlpha by animateFloatAsState(
-            targetValue = if (assemblyProgress.value > 0.6f) 0.65f else 0f,
+            targetValue = if (assemblyProgress.value > 0.6f) 0.6f else 0f,
             animationSpec = tween(800),
             label = "ambient_glow"
         )
 
         Box(
             modifier = Modifier
-                .size(380.dp)
+                .size(350.dp)
                 .alpha(glowAlpha)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            neonBlue.copy(alpha = 0.55f),
+                            neonBlue.copy(alpha = 0.5f),
                             Color.Transparent
                         )
                     )
                 )
-                .blur(75.dp)
+                .blur(70.dp)
         )
     }
 }
