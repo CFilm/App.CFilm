@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <!-- Outer Triangle Play Frame -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M30,30 L30,210 L210,120 Z" />
+
+    <!-- Letter C -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:pathData="M115,80 A55,55 0 1,0 115,160" />
+
+    <!-- Inner Play inside C -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M80,100 L80,140 L110,120 Z" />
+
+    <!-- Letter F -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M140,70 L140,170 M140,70 L200,70 M140,120 L190,120" />
+</vector>

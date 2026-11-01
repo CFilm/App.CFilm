@@ -35,18 +35,18 @@ data class SplashParticle(
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    // Generar partículas dispersas que convergen al centro
+    // Generar partículas dispersas que convergen más lentamente para apreciar cómo se van pegando
     val particles = remember {
         val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
-        for (i in 0..200) {
+        for (i in 0..250) {
             val angle = rand.nextFloat() * 2f * Math.PI.toFloat()
-            val distance = rand.nextFloat() * 900f + 300f
+            val distance = rand.nextFloat() * 1000f + 400f
             val startX = cos(angle) * distance
             val startY = sin(angle) * distance
 
             val targetAngle = rand.nextFloat() * 2f * Math.PI.toFloat()
-            val targetRadius = rand.nextFloat() * 40f
+            val targetRadius = rand.nextFloat() * 45f
             val targetX = cos(targetAngle) * targetRadius
             val targetY = sin(targetAngle) * targetRadius
 
@@ -56,7 +56,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     startYOffset = startY,
                     targetXOffset = targetX,
                     targetYOffset = targetY,
-                    size = rand.nextFloat() * 4.5f + 2f,
+                    size = rand.nextFloat() * 4f + 2f,
                     alphaFactor = rand.nextFloat() * 0.4f + 0.6f
                 )
             )
@@ -64,24 +64,24 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
-    // Fase 1: Ensamblaje de partículas (0s a 3.5s)
+    // Fase 1: Ensamblaje LENTO de partículas (0s a 4.8s) para ver cómo se van pegando
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 3500,
-            easing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
+            durationMillis = 4800,
+            easing = CubicBezierEasing(0.25f, 0.75f, 0.25f, 1f)
         ),
         label = "assembly"
     )
 
-    // Fase 2: Explosión / Destello de luz al juntarse las partículas (3.5s a 4.0s)
+    // Fase 2: Explosión / Destello de luz al juntarse las partículas (4.8s a 5.3s)
     val flashProgress = animateFloatAsState(
         targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
         animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label = "flash"
     )
 
-    // Fase 3: Aparición del logotipo oficial tras la explosión (4.0s en adelante)
+    // Fase 3: Aparición del logotipo vectorial correcto tras la explosión (5.3s en adelante)
     val logoScale = animateFloatAsState(
         targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
         animationSpec = spring(
@@ -99,7 +99,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(6000) // Duración total exacta de 6 segundos
+        delay(7500) // Duración total de 7.5 segundos para disfrutar todo el proceso cinemático
         onAnimationFinished()
     }
 
@@ -118,12 +118,12 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             val progress = assemblyProgress.value
             val flash = flashProgress.value
 
-            // 1. Dibujar partículas convergiendo
+            // 1. Dibujar partículas convergiendo lentamente
             if (progress < 1f) {
                 particles.forEach { p ->
                     val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
                     val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startYOffset) * progress
-                    val alpha = (p.alphaFactor * (1f - progress * 0.3f)).coerceIn(0f, 1f)
+                    val alpha = (p.alphaFactor * (1f - progress * 0.2f)).coerceIn(0f, 1f)
 
                     drawCircle(
                         color = neonBlue.copy(alpha = alpha),
@@ -135,10 +135,10 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
             // 2. Onda expansiva de la explosión (Shockwave / Flash)
             if (flash > 0f) {
-                val shockwaveRadius = flash * 500f
+                val shockwaveRadius = flash * 550f
                 val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
                 drawCircle(
-                    color = Color.White.copy(alpha = shockwaveAlpha * 0.8f),
+                    color = Color.White.copy(alpha = shockwaveAlpha * 0.85f),
                     radius = shockwaveRadius * 0.5f,
                     center = Offset(centerX, centerY)
                 )
@@ -146,14 +146,14 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     color = neonBlue.copy(alpha = shockwaveAlpha),
                     radius = shockwaveRadius,
                     center = Offset(centerX, centerY),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 12.dp.toPx() * (1f - flash))
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 14.dp.toPx() * (1f - flash))
                 )
             }
         }
 
         // Resplandor ambiental posterior a la explosión
         val glowAlpha by animateFloatAsState(
-            targetValue = if (logoAlpha.value > 0f) 0.7f else 0f,
+            targetValue = if (logoAlpha.value > 0f) 0.75f else 0f,
             animationSpec = tween(800),
             label = "glow"
         )
@@ -165,7 +165,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            neonBlue.copy(alpha = 0.6f),
+                            neonBlue.copy(alpha = 0.65f),
                             Color.Transparent
                         )
                     )
@@ -173,7 +173,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .blur(90.dp)
         )
 
-        // Logotipo oficial que emerge de la explosión
+        // Logotipo vectorial correcto que emerge de la explosión
         Image(
             painter = painterResource(id = R.drawable.app_logo),
             contentDescription = "Logo CFilm",
