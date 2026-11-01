@@ -2,6 +2,7 @@ package com.example.peliselprimazo.ui.screens.splash
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -9,20 +10,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.peliselprimazo.R
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-data class LogoParticle(
+data class SplashParticle(
     val startXOffset: Float,
     val startYOffset: Float,
     val targetXOffset: Float,
@@ -35,93 +35,71 @@ data class LogoParticle(
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    // Generar partículas con alta densidad para formar exactamente el diseño robusto del logo
+    // Generar partículas dispersas que convergen al centro
     val particles = remember {
-        val list = mutableListOf<LogoParticle>()
+        val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
+        for (i in 0..200) {
+            val angle = rand.nextFloat() * 2f * Math.PI.toFloat()
+            val distance = rand.nextFloat() * 900f + 300f
+            val startX = cos(angle) * distance
+            val startY = sin(angle) * distance
 
-        // 1. Triángulo Exterior (Play Frame)
-        for (i in 0..100) {
-            val t = i / 100f
-            val x: Float
-            val y: Float
-            if (t < 0.33f) {
-                val subT = t * 3f
-                x = -150f
-                y = -150f + subT * 300f
-            } else if (t < 0.66f) {
-                val subT = (t - 0.33f) * 3f
-                x = -150f + subT * 330f
-                y = 150f - subT * 150f
-            } else {
-                val subT = (t - 0.66f) * 3f
-                x = 180f - subT * 330f
-                y = 0f - subT * 150f
-            }
-            addParticle(list, x, y, rand)
+            val targetAngle = rand.nextFloat() * 2f * Math.PI.toFloat()
+            val targetRadius = rand.nextFloat() * 40f
+            val targetX = cos(targetAngle) * targetRadius
+            val targetY = sin(targetAngle) * targetRadius
+
+            list.add(
+                SplashParticle(
+                    startXOffset = startX,
+                    startYOffset = startY,
+                    targetXOffset = targetX,
+                    targetYOffset = targetY,
+                    size = rand.nextFloat() * 4.5f + 2f,
+                    alphaFactor = rand.nextFloat() * 0.4f + 0.6f
+                )
+            )
         }
-
-        // 2. Letra 'C' gruesa
-        for (i in 0..80) {
-            val angle = (i / 80f) * 1.55f * Math.PI.toFloat() + 0.78f
-            val radius = 75f
-            val x = -45f + cos(angle) * radius
-            val y = sin(angle) * radius
-            addParticle(list, x, y, rand)
-        }
-
-        // 3. Play Interno dentro de la 'C'
-        for (i in 0..40) {
-            val t = i / 40f
-            val x = -65f + t * 30f
-            val y = -25f + t * 50f * (if (t < 0.5f) t * 2f else (1f - t) * 2f)
-            addParticle(list, x, y, rand)
-        }
-
-        // 4. Letra 'F' robusta
-        for (i in 0..80) {
-            val t = i / 80f
-            val x: Float
-            val y: Float
-            if (t < 0.45f) {
-                // Vertical bar
-                x = 35f
-                y = -70f + (t / 0.45f) * 140f
-            } else if (t < 0.75f) {
-                // Top horizontal bar
-                val subT = (t - 0.45f) / 0.3f
-                x = 35f + subT * 70f
-                y = -70f
-            } else {
-                // Middle horizontal bar
-                val subT = (t - 0.75f) / 0.25f
-                x = 35f + subT * 55f
-                y = -5f
-            }
-            addParticle(list, x, y, rand)
-        }
-
         list
     }
 
+    // Fase 1: Ensamblaje de partículas (0s a 3.5s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 2600,
-            easing = CubicBezierEasing(0.15f, 0.85f, 0.15f, 1f)
+            durationMillis = 3500,
+            easing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
         ),
-        label = "vector_assembly"
+        label = "assembly"
     )
 
-    val vectorGlowAlpha = animateFloatAsState(
-        targetValue = if (assemblyProgress.value > 0.8f) 1f else 0f,
-        animationSpec = tween(durationMillis = 500),
-        label = "vector_glow"
+    // Fase 2: Explosión / Destello de luz al juntarse las partículas (3.5s a 4.0s)
+    val flashProgress = animateFloatAsState(
+        targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        label = "flash"
+    )
+
+    // Fase 3: Aparición del logotipo oficial tras la explosión (4.0s en adelante)
+    val logoScale = animateFloatAsState(
+        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "logo_scale"
+    )
+
+    val logoAlpha = animateFloatAsState(
+        targetValue = if (flashProgress.value > 0.3f) 1f else 0f,
+        animationSpec = tween(durationMillis = 600),
+        label = "logo_alpha"
     )
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(3200)
+        delay(6000) // Duración total exacta de 6 segundos
         onAnimationFinished()
     }
 
@@ -133,98 +111,51 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
+        // Lienzo para las partículas y la explosión
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            val centerX = canvasWidth / 2f
-            val centerY = canvasHeight / 2f
+            val centerX = size.width / 2f
+            val centerY = size.height / 2f
             val progress = assemblyProgress.value
+            val flash = flashProgress.value
 
-            // 1. Partículas convergiendo con mayor brillo y tamaño
-            particles.forEach { p ->
-                val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
-                val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startYOffset) * progress
+            // 1. Dibujar partículas convergiendo
+            if (progress < 1f) {
+                particles.forEach { p ->
+                    val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
+                    val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startYOffset) * progress
+                    val alpha = (p.alphaFactor * (1f - progress * 0.3f)).coerceIn(0f, 1f)
 
-                val alpha = (p.alphaFactor * (0.3f + 0.7f * progress)).coerceIn(0f, 1f)
-                val currentSize = p.size * (1.2f - 0.2f * progress)
-
-                drawCircle(
-                    color = neonBlue.copy(alpha = alpha),
-                    radius = currentSize,
-                    center = Offset(currentX, currentY)
-                )
-            }
-
-            // 2. Trazos vectoriales exactos, robustos y brillantes al completarse el ensamblaje
-            if (progress > 0.85f) {
-                val alpha = vectorGlowAlpha.value
-                val strokeWidth = 10.dp.toPx() // Trazos gruesos idénticos a la expectativa
-
-                // Triángulo Exterior
-                val trianglePath = Path().apply {
-                    moveTo(centerX - 150f, centerY - 150f)
-                    lineTo(centerX - 150f, centerY + 150f)
-                    lineTo(centerX + 180f, centerY)
-                    close()
-                }
-                drawPath(
-                    path = trianglePath,
-                    color = neonBlue.copy(alpha = alpha),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                )
-
-                // Letra C gruesa
-                val cPath = Path().apply {
-                    addArc(
-                        oval = androidx.compose.ui.geometry.Rect(centerX - 120f, centerY - 75f, centerX + 20f, centerY + 75f),
-                        startAngleDegrees = 90f,
-                        sweepAngleDegrees = 180f
+                    drawCircle(
+                        color = neonBlue.copy(alpha = alpha),
+                        radius = p.size,
+                        center = Offset(currentX, currentY)
                     )
                 }
-                drawPath(
-                    path = cPath,
-                    color = neonBlue.copy(alpha = alpha),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                )
+            }
 
-                // Play interno sólido en la C
-                val playPath = Path().apply {
-                    moveTo(centerX - 65f, centerY - 25f)
-                    lineTo(centerX - 65f, centerY + 25f)
-                    lineTo(centerX - 35f, centerY)
-                    close()
-                }
-                drawPath(
-                    path = playPath,
-                    color = neonBlue.copy(alpha = alpha),
-                    style = Stroke(width = strokeWidth * 0.9f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            // 2. Onda expansiva de la explosión (Shockwave / Flash)
+            if (flash > 0f) {
+                val shockwaveRadius = flash * 500f
+                val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
+                drawCircle(
+                    color = Color.White.copy(alpha = shockwaveAlpha * 0.8f),
+                    radius = shockwaveRadius * 0.5f,
+                    center = Offset(centerX, centerY)
                 )
-
-                // Letra F robusta
-                val fPath = Path().apply {
-                    // Barra vertical
-                    moveTo(centerX + 35f, centerY - 70f)
-                    lineTo(centerX + 35f, centerY + 70f)
-                    // Barra superior
-                    moveTo(centerX + 35f, centerY - 70f)
-                    lineTo(centerX + 105f, centerY - 70f)
-                    // Barra del medio
-                    moveTo(centerX + 35f, centerY - 5f)
-                    lineTo(centerX + 90f, centerY - 5f)
-                }
-                drawPath(
-                    path = fPath,
-                    color = neonBlue.copy(alpha = alpha),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawCircle(
+                    color = neonBlue.copy(alpha = shockwaveAlpha),
+                    radius = shockwaveRadius,
+                    center = Offset(centerX, centerY),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 12.dp.toPx() * (1f - flash))
                 )
             }
         }
 
-        // Resplandor ambiental de alta intensidad
+        // Resplandor ambiental posterior a la explosión
         val glowAlpha by animateFloatAsState(
-            targetValue = if (assemblyProgress.value > 0.6f) 0.8f else 0f,
+            targetValue = if (logoAlpha.value > 0f) 0.7f else 0f,
             animationSpec = tween(800),
-            label = "ambient_glow"
+            label = "glow"
         )
 
         Box(
@@ -234,30 +165,22 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            neonBlue.copy(alpha = 0.65f),
+                            neonBlue.copy(alpha = 0.6f),
                             Color.Transparent
                         )
                     )
                 )
-                .blur(80.dp)
+                .blur(90.dp)
+        )
+
+        // Logotipo oficial que emerge de la explosión
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = "Logo CFilm",
+            modifier = Modifier
+                .size(260.dp)
+                .scale(logoScale.value)
+                .alpha(logoAlpha.value)
         )
     }
-}
-
-private fun addParticle(list: MutableList<LogoParticle>, targetX: Float, targetY: Float, rand: Random) {
-    val angle = rand.nextFloat() * 2f * Math.PI.toFloat()
-    val distance = rand.nextFloat() * 900f + 350f
-    val startX = targetX + cos(angle) * distance
-    val startY = targetY + sin(angle) * distance
-
-    list.add(
-        LogoParticle(
-            startXOffset = startX - targetX,
-            startYOffset = startY - targetY,
-            targetXOffset = targetX,
-            targetYOffset = targetY,
-            size = rand.nextFloat() * 5f + 2.5f,
-            alphaFactor = rand.nextFloat() * 0.4f + 0.6f
-        )
-    )
 }
