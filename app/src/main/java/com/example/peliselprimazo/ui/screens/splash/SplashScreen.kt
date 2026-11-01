@@ -172,14 +172,35 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 )
         )
 
-        // Imagen oficial del logotipo que emerge de la explosión en el centro
-        Image(
-            painter = painterResource(id = R.mipmap.app_logo),
-            contentDescription = "Logo CFilm",
+        // Contenedor del logotipo con máscara de fundido (Vignette mask) para eliminar cualquier marco rectangular
+        Box(
             modifier = Modifier
-                .size(260.dp)
+                .size(280.dp)
                 .scale(logoScale.value)
-                .alpha(logoAlpha.value)
-        )
+                .alpha(logoAlpha.value),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.mipmap.app_logo),
+                contentDescription = "Logo CFilm",
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+            // Máscara radial que funde los bordes cuadrados con el fondo negro absoluto de la app
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.95f)
+                            ),
+                            radius = 220f
+                        )
+                    )
+            )
+        }
     }
 }
