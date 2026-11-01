@@ -83,7 +83,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     // Fase 3: Aparición de la imagen del logotipo tras la explosión (5.3s en adelante)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
+        targetValue = if (flashProgress.value > 0.5f) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -173,9 +173,9 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .blur(90.dp)
         )
 
-        // Imagen oficial del logotipo que emerge de la explosión
+        // Imagen oficial del logotipo que emerge de la explosión (R.mipmap.app_logo)
         Image(
-            painter = painterResource(id = R.drawable.app_logo),
+            painter = painterResource(id = R.mipmap.app_logo),
             contentDescription = "Logo CFilm",
             modifier = Modifier
                 .size(260.dp)
