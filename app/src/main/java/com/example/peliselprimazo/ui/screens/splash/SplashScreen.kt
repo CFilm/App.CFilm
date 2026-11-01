@@ -35,7 +35,7 @@ data class SplashParticle(
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    // Generar partículas dispersas que convergen más lentamente para apreciar cómo se van pegando
+    // Generar partículas dispersas que convergen lentamente (efecto de pegado gradual)
     val particles = remember {
         val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
@@ -64,7 +64,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
-    // Fase 1: Ensamblaje LENTO de partículas (0s a 4.8s) para ver cómo se van pegando
+    // Fase 1: Ensamblaje LENTO de partículas (0s a 4.8s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
@@ -81,7 +81,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         label = "flash"
     )
 
-    // Fase 3: Aparición del logotipo vectorial correcto tras la explosión (5.3s en adelante)
+    // Fase 3: Aparición de la imagen del logotipo tras la explosión (5.3s en adelante)
     val logoScale = animateFloatAsState(
         targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
         animationSpec = spring(
@@ -99,7 +99,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(7500) // Duración total de 7.5 segundos para disfrutar todo el proceso cinemático
+        delay(7500) // Duración total de 7.5 segundos
         onAnimationFinished()
     }
 
@@ -173,7 +173,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .blur(90.dp)
         )
 
-        // Logotipo vectorial correcto que emerge de la explosión
+        // Imagen oficial del logotipo que emerge de la explosión
         Image(
             painter = painterResource(id = R.drawable.app_logo),
             contentDescription = "Logo CFilm",
