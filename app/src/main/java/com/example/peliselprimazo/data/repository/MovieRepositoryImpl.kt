@@ -191,6 +191,14 @@ class MovieRepositoryImpl @Inject constructor(
                     return@withContext
                 }
 
+                val existingMoviesForLookup = movieDao.getAllMoviesSync()
+                val fileIdToMovieIdMap = mutableMapOf<String, Int>()
+                existingMoviesForLookup.forEach { movie ->
+                    movie.serverLinks.forEach { link ->
+                        fileIdToMovieIdMap[link.fileId] = movie.id
+                    }
+                }
+
                 val resolvedItems = allFiles.map { triple ->
                     var info = FileNameParser.parseFileName(triple.first)
                     val link = triple.second.copy(season = info.season, episode = info.episode, language = info.language)
@@ -201,22 +209,13 @@ class MovieRepositoryImpl @Inject constructor(
                         info = info.copy(isTv = false, isAnime = false)
                     }
 
-                    val id = getStableMovieId(info.cleanTitle, info.year, info.isTv, info.isAnime)
+                    val existingMovieId = fileIdToMovieIdMap[link.fileId]
+                    val id = existingMovieId ?: getStableMovieId(info.cleanTitle, info.year, info.isTv, info.isAnime)
                     Triple(info, link, id)
                 }
 
                 val grouped = resolvedItems.groupBy { triple ->
-                    val info = triple.first
-                    val titleLower = info.cleanTitle.lowercase()
-                        .replace(Regex("[-–—:]"), " ")
-                        .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+|santen|sensou)\\b.*"), "")
-                        .replace(Regex("[^a-z0-9]"), " ")
-                        .trim()
-                    
-                    val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
-                    val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
-                    
-                    if (info.isTv || info.isAnime) "tv|$baseKey" else "movie|$baseKey|${info.year ?: "unknown"}"
+                    triple.third // Group by the pre-resolved ID (unifying fileId matches and stable key matches)
                 }
 
                 val activeMovieIds = mutableSetOf<Int>()
@@ -226,7 +225,7 @@ class MovieRepositoryImpl @Inject constructor(
                     async(Dispatchers.IO) {
                         val primaryInfo = items.first().first
                         val allLinks = items.map { it.second }.distinctBy { "${it.serverName}_${it.fileId}" }
-                        val id = getStableMovieId(primaryInfo.cleanTitle, primaryInfo.year, primaryInfo.isTv, primaryInfo.isAnime)
+                        val id = items.first().third
                         activeMovieIds.add(id)
 
                         val existing = movieDao.getMovieById(id)
