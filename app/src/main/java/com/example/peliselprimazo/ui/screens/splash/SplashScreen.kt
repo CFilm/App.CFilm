@@ -1,6 +1,7 @@
 package com.example.peliselprimazo.ui.screens.splash
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.peliselprimazo.R
@@ -23,19 +25,49 @@ import kotlinx.coroutines.delay
 @Composable
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }
-    
-    // Animación de escala muy suave
+
     val scaleAnim = animateFloatAsState(
-        targetValue = if (startAnimation) 1.05f else 1f,
-        animationSpec = tween(durationMillis = 2000, easing = LinearOutSlowInEasing),
-        label = "scale"
+        targetValue = if (startAnimation) 1.08f else 0.8f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "logo_scale"
+    )
+
+    val alphaAnim = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "logo_alpha"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "vector_pulse")
+    val pulseRadius by infiniteTransition.animateFloat(
+        initialValue = 40f,
+        targetValue = 180f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse_radius"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse_alpha"
     )
 
     LaunchedEffect(Unit) {
         startAnimation = true
-        delay(1800) 
+        delay(2200) // Intro cinemática mientras los datos cargan en segundo plano
         onAnimationFinished()
     }
+
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Box(
         modifier = Modifier
@@ -43,10 +75,14 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        // Resplandor de fondo ambiental (este sí puede tener un pequeño fade-in)
-        val ambientAlpha by animateFloatAsState(
-            targetValue = if (startAnimation) 0.4f else 0f,
-            animationSpec = tween(800)
+        val ambientAlpha by infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 0.6f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "ambient_glow"
         )
 
         Box(
@@ -56,40 +92,57 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            primaryColor.copy(alpha = 0.5f),
                             Color.Transparent
                         )
                     )
                 )
-                .blur(80.dp)
+                .blur(90.dp)
         )
+
+        // Dibujo vectorial en Canvas (Ondas expansivas cinemáticas)
+        Canvas(modifier = Modifier.size(300.dp)) {
+            val center = this.center
+            drawCircle(
+                color = primaryColor.copy(alpha = pulseAlpha),
+                radius = pulseRadius,
+                center = center,
+                style = Stroke(width = 2.5.dp.toPx())
+            )
+            drawCircle(
+                color = primaryColor.copy(alpha = pulseAlpha * 0.5f),
+                radius = pulseRadius * 1.5f,
+                center = center,
+                style = Stroke(width = 1.5.dp.toPx())
+            )
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(alphaAnim.value)
         ) {
-            // El Logo es visible desde el primer frame (sin alpha animation)
             Image(
                 painter = painterResource(id = R.drawable.app_logo),
                 contentDescription = "Logo CFilm",
                 modifier = Modifier
-                    .size(280.dp)
+                    .size(240.dp)
                     .scale(scaleAnim.value)
             )
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(56.dp))
             
-            // La barra de carga también es visible de inmediato
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(200.dp)
+                modifier = Modifier.width(180.dp)
             ) {
                 LinearProgressIndicator(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                        .height(3.5.dp),
+                    color = primaryColor,
                     trackColor = Color.White.copy(alpha = 0.1f),
                     strokeCap = StrokeCap.Round
                 )

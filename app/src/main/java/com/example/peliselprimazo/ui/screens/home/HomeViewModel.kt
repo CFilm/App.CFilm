@@ -484,9 +484,12 @@ class HomeViewModel @Inject constructor(
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun submitSearchQuery(query: String) {
         if (query.isNotBlank()) {
             viewModelScope.launch {
-                repository.addSearchQuery(query)
+                repository.addSearchQuery(query.trim())
             }
         }
     }

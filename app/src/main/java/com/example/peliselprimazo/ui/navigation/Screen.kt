@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String = "", val icon: ImageVector? = null) {
+    object Splash : Screen("splash")
     object Home : Screen("home", "Inicio", Icons.Default.Home)
     object Movies : Screen("movies", "Películas", Icons.Default.Movie)
     object Series : Screen("series", "Series", Icons.Default.Tv)

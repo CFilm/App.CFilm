@@ -151,7 +151,10 @@ fun SearchContent(
                             headlineContent = { Text(item, color = Color.LightGray) },
                             leadingContent = { Icon(Icons.Rounded.History, contentDescription = null, tint = Color.Gray) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.clickable { onQueryChange(item) }
+                            modifier = Modifier.clickable { 
+                                onQueryChange(item)
+                                viewModel.submitSearchQuery(item)
+                            }
                         )
                     }
                 }

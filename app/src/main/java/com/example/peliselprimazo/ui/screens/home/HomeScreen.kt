@@ -238,6 +238,7 @@ fun HomeScreen(
             TopSearchBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                onSearchSubmit = { viewModel.submitSearchQuery(it) },
                 onCloseClick = { viewModel.onSearchActiveChange(false) },
                 modifier = Modifier.zIndex(5f)
             )

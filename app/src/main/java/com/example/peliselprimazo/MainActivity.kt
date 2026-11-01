@@ -40,6 +40,7 @@ import com.example.peliselprimazo.ui.screens.home.HomeScreen
 import com.example.peliselprimazo.ui.screens.home.HomeViewModel
 import com.example.peliselprimazo.ui.screens.player.PlayerScreen
 import com.example.peliselprimazo.ui.screens.player.PlayerViewModel
+import com.example.peliselprimazo.ui.screens.splash.SplashScreen
 import com.example.peliselprimazo.ui.theme.CFilmTheme
 import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -153,13 +154,23 @@ fun MainContent(
         
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Splash.route,
             modifier = Modifier.padding(finalPadding),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400, easing = EaseInOutQuart)) + fadeIn(animationSpec = tween(400)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 3 }, animationSpec = tween(400, easing = EaseInOutQuart)) + fadeOut(animationSpec = tween(400)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }, animationSpec = tween(400, easing = EaseInOutQuart)) + fadeIn(animationSpec = tween(400)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400, easing = EaseInOutQuart)) + fadeOut(animationSpec = tween(400)) }
         ) {
+            composable(Screen.Splash.route) {
+                SplashScreen(
+                    onAnimationFinished = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(Screen.Home.route) {
                 HomeScreen(
                     viewModel = homeViewModel,
