@@ -65,7 +65,7 @@ class MovieRepositoryImpl @Inject constructor(
     private val streamtapeKey = BuildConfig.STREAMTAPE_KEY
     private val tmdbApiKey = BuildConfig.TMDB_API_KEY
 
-    private val parallelSemaphore = Semaphore(10)
+    private val parallelSemaphore = Semaphore(25)
 
     private val _currentUser = MutableStateFlow<User?>(null)
     private val _avatarOverride = MutableStateFlow<String?>(null)
@@ -372,45 +372,45 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun fetchStreamtapeFilesSafe(): List<Triple<String, ServerLink, String>> {
-        val results = mutableListOf<Triple<String, ServerLink, String>>()
-        val folderQueue = mutableListOf<Pair<String?, String?>>()
-        folderQueue.add(null to null)
-        var iters = 0
+    private suspend fun fetchStreamtapeFilesSafe(): List<Triple<String, ServerLink, String>> = coroutineScope {
         val videoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m3u8")
-
-        while (folderQueue.isNotEmpty() && iters < 500) {
-            val pair = folderQueue.removeAt(0)
-            val currentId = pair.first
-            val currentParent = pair.second
+        
+        suspend fun traverseFolder(folderId: String?, parentName: String?): List<Triple<String, ServerLink, String>> {
+            val list = mutableListOf<Triple<String, ServerLink, String>>()
             try {
-                Log.d("StreamtapeApi", "Listing folder: id=$currentId, parent=$currentParent")
-                val response = streamtapeApi.listFolder(streamtapeLogin, streamtapeKey, currentId)
-                Log.d("StreamtapeApi", "listFolder response status: ${response.status}, msg: ${response.msg}, files count: ${response.result?.files?.size ?: 0}")
-                response.result?.let { res ->
-                    res.files?.forEach { file ->
-                        val fileName = file.name.lowercase()
-                        if (videoExtensions.any { fileName.endsWith(it) }) {
-                            val name = if (currentParent != null && file.name.length < 10) "$currentParent ${file.name}" else file.name
-                            val parsed = FileNameParser.parseFileName(name)
-                            results.add(Triple(name, ServerLink("Streamtape", file.linkid, "HD", season = parsed.season, episode = parsed.episode, language = parsed.language), if (parsed.isTv || parsed.isAnime) "TV" else "MOVIE"))
-                        }
-                    }
-                    res.folders?.forEach { folder ->
-                        val folderName = folder.name.lowercase()
-                        if (!folderName.contains("thumbnail") && !folderName.startsWith(".")) {
-                            folderQueue.add(folder.id to folder.name)
-                        }
+                val response = streamtapeApi.listFolder(streamtapeLogin, streamtapeKey, folderId)
+                val res = response.result ?: return@traverseFolder list
+
+                res.files?.forEach { file ->
+                    val fileName = file.name.lowercase()
+                    if (videoExtensions.any { fileName.endsWith(it) }) {
+                        val name = if (parentName != null && file.name.length < 10) "$parentName ${file.name}" else file.name
+                        val parsed = FileNameParser.parseFileName(name)
+                        list.add(Triple(name, ServerLink("Streamtape", file.linkid, "HD", season = parsed.season, episode = parsed.episode, language = parsed.language), if (parsed.isTv || parsed.isAnime) "TV" else "MOVIE"))
                     }
                 }
-                delay(100)
+
+                val subfolderDeferreds = res.folders?.filter { folder ->
+                    val folderName = folder.name.lowercase()
+                    !folderName.contains("thumbnail") && !folderName.startsWith(".")
+                }?.map { folder ->
+                    async(Dispatchers.IO) {
+                        traverseFolder(folder.id, folder.name)
+                    }
+                } ?: emptyList()
+
+                subfolderDeferreds.awaitAll().forEach { subList ->
+                    list.addAll(subList)
+                }
             } catch (e: Exception) {
-                Log.e("StreamtapeApi", "Error listing folder id=$currentId: ${e.message}", e)
+                Log.e("StreamtapeApi", "Error traversing folder id=$folderId: ${e.message}")
             }
-            iters++
+            return@traverseFolder list
         }
-        Log.d("StreamtapeApi", "Total Streamtape files found: ${results.size}")
-        return results
+
+        val results = traverseFolder(null, null)
+        Log.d("StreamtapeApi", "Total Streamtape files found (Parallel): ${results.size}")
+        results
     }
 
     private suspend fun fetchRemoteUserData(): RemoteUserData? {

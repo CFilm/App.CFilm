@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -34,7 +33,6 @@ data class SplashParticle(
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    // Generar partículas dispersas que convergen lentamente (efecto de pegado gradual)
     val particles = remember {
         val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
@@ -63,7 +61,6 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
-    // Fase 1: Ensamblaje LENTO de partículas (0s a 4.8s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
@@ -73,16 +70,14 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         label = "assembly"
     )
 
-    // Fase 2: Explosión / Destello de luz al juntarse las partículas (4.8s a 5.3s)
     val flashProgress = animateFloatAsState(
         targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
         animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label = "flash"
     )
 
-    // Fase 3: Aparición de la imagen del logotipo tras la explosión (5.3s en adelante)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
+        targetValue = if (flashProgress.value > 0.5f) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -98,7 +93,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(7500) // Duración total de 7.5 segundos
+        delay(7500)
         onAnimationFinished()
     }
 
@@ -110,14 +105,12 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        // Lienzo para las partículas y la explosión
         Canvas(modifier = Modifier.fillMaxSize()) {
             val centerX = size.width / 2f
             val centerY = size.height / 2f
             val progress = assemblyProgress.value
             val flash = flashProgress.value
 
-            // 1. Dibujar partículas convergiendo lentamente
             if (progress < 1f) {
                 particles.forEach { p ->
                     val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
@@ -132,7 +125,6 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                 }
             }
 
-            // 2. Onda expansiva de la explosión (Shockwave / Flash cubriendo la pantalla)
             if (flash > 0f) {
                 val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.2f
                 val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
@@ -150,57 +142,14 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             }
         }
 
-        // Resplandor ambiental en LOS BORDES DE LA PANTALLA (Screen Edge Glow / Vignette)
-        val edgeGlowAlpha by animateFloatAsState(
-            targetValue = if (logoAlpha.value > 0f) 0.85f else 0f,
-            animationSpec = tween(800),
-            label = "edge_glow"
-        )
-
-        Box(
+        // Logotipo oficial sobre fondo negro puro (sin viñetas ni degradados que formen cajas)
+        Image(
+            painter = painterResource(id = R.mipmap.app_logo),
+            contentDescription = "Logo CFilm",
             modifier = Modifier
-                .fillMaxSize()
-                .alpha(edgeGlowAlpha)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            neonBlue.copy(alpha = 0.45f)
-                        ),
-                        radius = 1200f
-                    )
-                )
-        )
-
-        // Contenedor del logotipo con máscara de fundido (Vignette mask) para eliminar cualquier marco rectangular
-        Box(
-            modifier = Modifier
-                .size(280.dp)
+                .size(260.dp)
                 .scale(logoScale.value)
-                .alpha(logoAlpha.value),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.mipmap.app_logo),
-                contentDescription = "Logo CFilm",
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-            // Máscara radial que funde los bordes cuadrados con el fondo negro absoluto de la app
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.95f)
-                            ),
-                            radius = 220f
-                        )
-                    )
-            )
-        }
+                .alpha(logoAlpha.value)
+        )
     }
 }
