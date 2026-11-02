@@ -19,3 +19,4 @@ dependencyResolutionManagement {
 rootProject.name = "CFilm"
 include(":app")
 include(":desktop")
+include(":shared")

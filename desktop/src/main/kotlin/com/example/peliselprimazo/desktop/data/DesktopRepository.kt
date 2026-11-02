@@ -97,14 +97,17 @@ class DesktopRepository {
         .create(DesktopTmdbApi::class.java)
 
     suspend fun fetchMovies(): List<Movie> = withContext(Dispatchers.IO) {
-        val moviesList = mutableListOf<Movie>()
         val videoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m3u8")
-        val rawFiles = mutableListOf<Pair<String, ServerLink>>()
+        val rawFiles = mutableListOf<Triple<String, ServerLink, Boolean>>()
 
-        suspend fun traverseFolder(folderId: String?, parentName: String?) {
+        suspend fun traverseFolder(folderId: String?, parentName: String?, isFolderTv: Boolean) {
             try {
                 val response = streamtapeApi.listFolder(login, key, folderId)
                 val subfolders = mutableListOf<Pair<String, String>>()
+
+                val currentIsTv = isFolderTv || parentName?.lowercase()?.let {
+                    it.contains("serie") || it.contains("anime") || it.contains("tv") || it.contains("temporada")
+                } == true
 
                 response.result?.files?.forEach { file ->
                     val fileName = file.name.lowercase()
@@ -114,7 +117,7 @@ class DesktopRepository {
                         } else {
                             file.name
                         }
-                        rawFiles.add(name to ServerLink("Streamtape", file.linkid, "HD"))
+                        rawFiles.add(Triple(name, ServerLink("Streamtape", file.linkid, "HD"), currentIsTv))
                     }
                 }
 
@@ -128,7 +131,7 @@ class DesktopRepository {
                 if (subfolders.isNotEmpty()) {
                     val deferreds = subfolders.map { (subId, subName) ->
                         async(Dispatchers.IO) {
-                            traverseFolder(subId, subName)
+                            traverseFolder(subId, subName, currentIsTv)
                         }
                     }
                     deferreds.awaitAll()
@@ -139,43 +142,57 @@ class DesktopRepository {
         }
 
         try {
-            traverseFolder(null, null)
+            traverseFolder(null, null, false)
 
-            rawFiles.forEach { (rawName, link) ->
+            val initialMovies = rawFiles.map { (rawName, link, isFolderTv) ->
                 val cleanTitle = rawName.replace(Regex("\\.(mp4|mkv|avi|mov|wmv|flv|webm|m3u8)$", RegexOption.IGNORE_CASE), "")
                     .replace(Regex("[._\\-/]"), " ")
                     .replace(Regex("(?i)1080p|720p|480p|h264|h265|latino|sub"), "")
                     .trim()
 
-                val id = cleanTitle.hashCode()
+                val isNameTv = rawName.contains("season", true) || rawName.contains("temporada", true) || rawName.contains("s0", true) || rawName.contains("ep", true) || rawName.contains("capitulo", true)
+                val contentType = if (isFolderTv || isNameTv) ContentType.TV else ContentType.MOVIE
+                val id = (cleanTitle + link.fileId).hashCode()
 
-                var posterUrl: String? = null
-                var overview: String = "Contenido disponible."
-                try {
-                    val tmdbResult = tmdbApi.searchMovie(cleanTitle).results.firstOrNull()
-                        ?: tmdbApi.searchTv(cleanTitle).results.firstOrNull()
-                    if (tmdbResult != null) {
-                        val posterPath = (tmdbResult as? TmdbMovieResult)?.posterPath ?: (tmdbResult as? TmdbTvResult)?.posterPath
-                        posterUrl = posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
-                        overview = (tmdbResult as? TmdbMovieResult)?.overview ?: (tmdbResult as? TmdbTvResult)?.overview ?: overview
-                    }
-                } catch (_: Exception) {}
-
-                moviesList.add(
-                    Movie(
-                        id = id,
-                        title = cleanTitle,
-                        overview = overview,
-                        posterUrl = posterUrl,
-                        serverLinks = listOf(link),
-                        contentType = ContentType.MOVIE
-                    )
+                Movie(
+                    id = id,
+                    title = cleanTitle,
+                    overview = "Cargando metadatos...",
+                    posterUrl = null,
+                    serverLinks = listOf(link),
+                    contentType = contentType
                 )
-            }
+            }.distinctBy { it.id }
+
+            // Enriquecer con TMDB en paralelo para máxima velocidad
+            val enrichedMovies = initialMovies.map { movie ->
+                async(Dispatchers.IO) {
+                    try {
+                        val tmdbResult = if (movie.contentType == ContentType.TV) {
+                            tmdbApi.searchTv(movie.title).results.firstOrNull()
+                        } else {
+                            tmdbApi.searchMovie(movie.title).results.firstOrNull() ?: tmdbApi.searchTv(movie.title).results.firstOrNull()
+                        }
+                        if (tmdbResult != null) {
+                            val posterPath = (tmdbResult as? TmdbMovieResult)?.posterPath ?: (tmdbResult as? TmdbTvResult)?.posterPath
+                            val posterUrl = posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+                            val overview = (tmdbResult as? TmdbMovieResult)?.overview ?: (tmdbResult as? TmdbTvResult)?.overview ?: movie.overview
+                            val rating = (tmdbResult as? TmdbMovieResult)?.voteAverage ?: (tmdbResult as? TmdbTvResult)?.voteAverage ?: 0.0
+                            movie.copy(posterUrl = posterUrl, overview = overview, rating = rating)
+                        } else {
+                            movie
+                        }
+                    } catch (_: Exception) {
+                        movie
+                    }
+                }
+            }.awaitAll()
+
+            return@withContext enrichedMovies
         } catch (e: Exception) {
             println("Error fetching desktop files: ${e.message}")
+            return@withContext emptyList()
         }
-        moviesList
     }
 
     suspend fun getStreamUrl(fileId: String): String? = withContext(Dispatchers.IO) {

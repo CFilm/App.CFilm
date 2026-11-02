@@ -1,0 +1,3 @@
+- `[x]` Create shared KMP data and domain layer structure
+- `[/]` Migrate domain models and use cases to shared module
+- `[ ]` Verify builds for Android (`:app:assembleDebug`) and Desktop (`:desktop:assemble`)
