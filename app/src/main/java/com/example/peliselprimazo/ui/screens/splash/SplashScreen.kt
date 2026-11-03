@@ -32,11 +32,12 @@ data class SplashParticle(
 @Composable
 fun SplashScreen(onAnimationFinished: () -> Unit) {
     var animationTriggered by remember { mutableStateOf(false) }
+    var isExiting by remember { mutableStateOf(false) }
 
     val particles = remember {
         val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
-        for (i in 0..250) {
+        for (i in 0..220) {
             val angle = rand.nextFloat() * 2f * Math.PI.toFloat()
             val distance = rand.nextFloat() * 1000f + 400f
             val startX = cos(angle) * distance
@@ -61,23 +62,26 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
+    // Fase 1: Ensamblaje fluido de partículas (2.2s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 4800,
+            durationMillis = 2200,
             easing = CubicBezierEasing(0.25f, 0.75f, 0.25f, 1f)
         ),
         label = "assembly"
     )
 
+    // Fase 2: Explosión / Destello de luz (0.4s)
     val flashProgress = animateFloatAsState(
         targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "flash"
     )
 
+    // Fase 3: Aparición del logotipo (sostener sólo 1 segundo)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.5f) 1f else 0f,
+        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -87,13 +91,28 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
 
     val logoAlpha = animateFloatAsState(
         targetValue = if (flashProgress.value > 0.3f) 1f else 0f,
-        animationSpec = tween(durationMillis = 600),
+        animationSpec = tween(durationMillis = 400),
         label = "logo_alpha"
+    )
+
+    // Animación de salida (Dissolve / Fade out final hacia la app)
+    val exitAlpha = animateFloatAsState(
+        targetValue = if (isExiting) 0f else 1f,
+        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        label = "exit_alpha"
+    )
+
+    val exitScale = animateFloatAsState(
+        targetValue = if (isExiting) 1.15f else 1f,
+        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        label = "exit_scale"
     )
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(7500)
+        delay(3200) // Sostener el logo solo 1 segundo tras la explosión
+        isExiting = true
+        delay(400) // Transición de salida suave hacia el Home
         onAnimationFinished()
     }
 
@@ -102,7 +121,9 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(Color.Black)
+            .alpha(exitAlpha.value)
+            .scale(exitScale.value),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -114,7 +135,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             if (progress < 1f) {
                 particles.forEach { p ->
                     val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
-                    val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startYOffset) * progress
+                    val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startXOffset) * progress
                     val alpha = (p.alphaFactor * (1f - progress * 0.2f)).coerceIn(0f, 1f)
 
                     drawCircle(
@@ -142,7 +163,6 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             }
         }
 
-        // Logotipo oficial sobre fondo negro puro (sin viñetas ni degradados que formen cajas)
         Image(
             painter = painterResource(id = R.mipmap.app_logo),
             contentDescription = "Logo CFilm",
