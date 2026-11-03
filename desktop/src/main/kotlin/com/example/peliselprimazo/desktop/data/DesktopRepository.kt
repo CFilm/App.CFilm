@@ -1,6 +1,7 @@
 package com.example.peliselprimazo.desktop.data
 
 import com.example.peliselprimazo.data.model.*
+import com.example.peliselprimazo.data.repository.helpers.FileNameParser
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.model.ServerLink
@@ -54,19 +55,13 @@ interface DesktopTmdbApi {
         @Query("api_key") apiKey: String = "4c4847173ec09e41bd12ce8654963e87"
     ): TmdbSearchResponse<TmdbTvResult>
 
-    @GET("movie/{movie_id}")
-    suspend fun getMovieDetails(
-        @Path("movie_id") movieId: Int,
-        @Query("language") language: String = "es-MX",
-        @Query("api_key") apiKey: String = "4c4847173ec09e41bd12ce8654963e87"
-    ): TmdbMovieDetail
-
-    @GET("tv/{tv_id}")
-    suspend fun getTvDetails(
+    @GET("tv/{tv_id}/season/{season_number}")
+    suspend fun getTvSeasonDetails(
         @Path("tv_id") tvId: Int,
+        @Path("season_number") seasonNumber: Int,
         @Query("language") language: String = "es-MX",
         @Query("api_key") apiKey: String = "4c4847173ec09e41bd12ce8654963e87"
-    ): TmdbTvDetail
+    ): TmdbSeasonDetail
 }
 
 class DesktopRepository {
@@ -98,16 +93,12 @@ class DesktopRepository {
 
     suspend fun fetchMovies(): List<Movie> = withContext(Dispatchers.IO) {
         val videoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m3u8")
-        val rawFiles = mutableListOf<Triple<String, ServerLink, Boolean>>()
+        val rawFiles = mutableListOf<Pair<String, ServerLink>>()
 
-        suspend fun traverseFolder(folderId: String?, parentName: String?, isFolderTv: Boolean) {
+        suspend fun traverseFolder(folderId: String?, parentName: String?) {
             try {
                 val response = streamtapeApi.listFolder(login, key, folderId)
                 val subfolders = mutableListOf<Pair<String, String>>()
-
-                val currentIsTv = isFolderTv || parentName?.lowercase()?.let {
-                    it.contains("serie") || it.contains("anime") || it.contains("tv") || it.contains("temporada")
-                } == true
 
                 response.result?.files?.forEach { file ->
                     val fileName = file.name.lowercase()
@@ -117,7 +108,7 @@ class DesktopRepository {
                         } else {
                             file.name
                         }
-                        rawFiles.add(Triple(name, ServerLink("Streamtape", file.linkid, "HD"), currentIsTv))
+                        rawFiles.add(name to ServerLink("Streamtape", file.linkid, "HD"))
                     }
                 }
 
@@ -131,7 +122,7 @@ class DesktopRepository {
                 if (subfolders.isNotEmpty()) {
                     val deferreds = subfolders.map { (subId, subName) ->
                         async(Dispatchers.IO) {
-                            traverseFolder(subId, subName, currentIsTv)
+                            traverseFolder(subId, subName)
                         }
                     }
                     deferreds.awaitAll()
@@ -142,49 +133,114 @@ class DesktopRepository {
         }
 
         try {
-            traverseFolder(null, null, false)
+            traverseFolder(null, null)
 
-            val initialMovies = rawFiles.map { (rawName, link, isFolderTv) ->
-                val cleanTitle = rawName.replace(Regex("\\.(mp4|mkv|avi|mov|wmv|flv|webm|m3u8)$", RegexOption.IGNORE_CASE), "")
-                    .replace(Regex("[._\\-/]"), " ")
-                    .replace(Regex("(?i)1080p|720p|480p|h264|h265|latino|sub"), "")
-                    .trim()
-
-                val isNameTv = rawName.contains("season", true) || rawName.contains("temporada", true) || rawName.contains("s0", true) || rawName.contains("ep", true) || rawName.contains("capitulo", true)
-                val contentType = if (isFolderTv || isNameTv) ContentType.TV else ContentType.MOVIE
-                val id = (cleanTitle + link.fileId).hashCode()
-
-                Movie(
-                    id = id,
-                    title = cleanTitle,
-                    overview = "Cargando metadatos...",
-                    posterUrl = null,
-                    serverLinks = listOf(link),
-                    contentType = contentType
+            // Parsear cada archivo con FileNameParser
+            val parsedFiles = rawFiles.map { (rawName, link) ->
+                val parsed = FileNameParser.parseFileName(rawName)
+                val updatedLink = link.copy(
+                    season = parsed.season,
+                    episode = parsed.episode,
+                    language = parsed.language
                 )
-            }.distinctBy { it.id }
+                Triple(parsed, updatedLink, rawName)
+            }
 
-            // Enriquecer con TMDB en paralelo para máxima velocidad
-            val enrichedMovies = initialMovies.map { movie ->
+            // Agrupar archivos por el título limpio de la serie/película
+            val groupedByTitle = parsedFiles.groupBy { (parsed, _, _) ->
+                val titleLower = parsed.cleanTitle.lowercase()
+                    .replace(Regex("[-–—:]"), " ")
+                    .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+)\\b.*"), "")
+                    .replace(Regex("[^a-z0-9]"), " ")
+                    .trim()
+                val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
+                val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
+                if (parsed.isTv || parsed.isAnime) "tv|$baseKey" else "movie|$baseKey|${parsed.year ?: "unknown"}"
+            }
+
+            // Procesar cada grupo para crear 1 SOLO Movie por serie/película
+            val enrichedMovies = groupedByTitle.values.map { items ->
                 async(Dispatchers.IO) {
+                    val firstParsed = items.first().first
+                    val allLinks = items.map { it.second }.distinctBy { it.fileId }
+                    val isTv = firstParsed.isTv || firstParsed.isAnime
+                    val contentType = if (isTv) ContentType.TV else ContentType.MOVIE
+                    val id = (firstParsed.cleanTitle + (firstParsed.year ?: "")).hashCode()
+
+                    var title = firstParsed.cleanTitle.split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+                    var overview = "Contenido disponible."
+                    var posterUrl: String? = null
+                    var backdropUrl: String? = null
+                    var rating = 0.0
+                    var finalLinks = allLinks
+
                     try {
-                        val tmdbResult = if (movie.contentType == ContentType.TV) {
-                            tmdbApi.searchTv(movie.title).results.firstOrNull()
+                        if (isTv) {
+                            val tvResult = tmdbApi.searchTv(firstParsed.cleanTitle, firstParsed.year).results.firstOrNull()
+                                ?: tmdbApi.searchTv(firstParsed.cleanTitle).results.firstOrNull()
+
+                            if (tvResult != null) {
+                                title = tvResult.name
+                                overview = tvResult.overview?.ifBlank { overview } ?: overview
+                                posterUrl = tvResult.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+                                backdropUrl = tvResult.backdropPath?.let { "https://image.tmdb.org/t/p/w780$it" }
+                                rating = tvResult.voteAverage ?: 0.0
+
+                                // Obtener detalles de episodios para miniaturas y títulos
+                                val seasons = allLinks.mapNotNull { it.season }.distinct()
+                                val epThumbnails = mutableMapOf<Pair<Int, Int>, Triple<String?, String?, String?>>()
+
+                                seasons.forEach { seasonNum ->
+                                    try {
+                                        val seasonDetail = tmdbApi.getTvSeasonDetails(tvResult.id, seasonNum)
+                                        seasonDetail.episodes?.forEach { ep ->
+                                            if (ep.seasonNumber != null && ep.episodeNumber != null) {
+                                                val thumb = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
+                                                epThumbnails[ep.seasonNumber to ep.episodeNumber] = Triple(thumb, ep.name, ep.overview)
+                                            }
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+
+                                finalLinks = allLinks.map { link ->
+                                    val s = link.season ?: 1
+                                    val e = link.episode ?: 1
+                                    val epInfo = epThumbnails[s to e]
+                                    if (epInfo != null) {
+                                        link.copy(
+                                            thumbnailUri = epInfo.first,
+                                            episodeTitle = epInfo.second,
+                                            overview = epInfo.third
+                                        )
+                                    } else {
+                                        link
+                                    }
+                                }
+                            }
                         } else {
-                            tmdbApi.searchMovie(movie.title).results.firstOrNull() ?: tmdbApi.searchTv(movie.title).results.firstOrNull()
+                            val movieResult = tmdbApi.searchMovie(firstParsed.cleanTitle, firstParsed.year).results.firstOrNull()
+                                ?: tmdbApi.searchMovie(firstParsed.cleanTitle).results.firstOrNull()
+
+                            if (movieResult != null) {
+                                title = movieResult.title
+                                overview = movieResult.overview?.ifBlank { overview } ?: overview
+                                posterUrl = movieResult.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+                                backdropUrl = movieResult.backdropPath?.let { "https://image.tmdb.org/t/p/w780$it" }
+                                rating = movieResult.voteAverage ?: 0.0
+                            }
                         }
-                        if (tmdbResult != null) {
-                            val posterPath = (tmdbResult as? TmdbMovieResult)?.posterPath ?: (tmdbResult as? TmdbTvResult)?.posterPath
-                            val posterUrl = posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
-                            val overview = (tmdbResult as? TmdbMovieResult)?.overview ?: (tmdbResult as? TmdbTvResult)?.overview ?: movie.overview
-                            val rating = (tmdbResult as? TmdbMovieResult)?.voteAverage ?: (tmdbResult as? TmdbTvResult)?.voteAverage ?: 0.0
-                            movie.copy(posterUrl = posterUrl, overview = overview, rating = rating)
-                        } else {
-                            movie
-                        }
-                    } catch (_: Exception) {
-                        movie
-                    }
+                    } catch (_: Exception) {}
+
+                    Movie(
+                        id = id,
+                        title = title,
+                        overview = overview,
+                        posterUrl = posterUrl,
+                        backdropUrl = backdropUrl,
+                        rating = rating,
+                        serverLinks = finalLinks,
+                        contentType = contentType
+                    )
                 }
             }.awaitAll()
 
