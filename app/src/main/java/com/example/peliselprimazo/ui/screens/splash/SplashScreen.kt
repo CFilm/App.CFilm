@@ -37,9 +37,9 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     val particles = remember {
         val list = mutableListOf<SplashParticle>()
         val rand = Random(42)
-        for (i in 0..220) {
+        for (i in 0..240) {
             val angle = rand.nextFloat() * 2f * Math.PI.toFloat()
-            val distance = rand.nextFloat() * 1000f + 400f
+            val distance = rand.nextFloat() * 1100f + 450f
             val startX = cos(angle) * distance
             val startY = sin(angle) * distance
 
@@ -62,26 +62,26 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
-    // Fase 1: Ensamblaje de partículas más extendido y deliberado (3.2s)
+    // Fase 1: Ensamblaje de partículas más pausado y cinematográfico (4.2s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 3200,
+            durationMillis = 4200,
             easing = CubicBezierEasing(0.25f, 0.75f, 0.25f, 1f)
         ),
         label = "assembly"
     )
 
-    // Fase 2: Explosión y onda expansiva más duradera (0.6s)
+    // Fase 2: Explosión / Onda expansiva (0.6s)
     val flashProgress = animateFloatAsState(
         targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
         label = "flash"
     )
 
-    // Fase 3: Logotipo visible (sostener 0.8s)
+    // Fase 3: Logotipo visible (sostener 1.2s antes de salir)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.4f) 1f else 0.5f,
+        targetValue = if (flashProgress.value > 0.4f) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -95,24 +95,24 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         label = "logo_alpha"
     )
 
-    // Animación de salida (0.4s final hacia el Home)
+    // Animación de salida (0.5s final hacia el Home)
     val exitAlpha = animateFloatAsState(
         targetValue = if (isExiting) 0f else 1f,
-        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
         label = "exit_alpha"
     )
 
     val exitScale = animateFloatAsState(
-        targetValue = if (isExiting) 1.12f else 1f,
-        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        targetValue = if (isExiting) 1.15f else 1f,
+        animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
         label = "exit_scale"
     )
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(4600) // 3.2s + 0.6s + 0.8s = 4.6s antes de iniciar el desvanecimiento
+        delay(6000) // 4.2s + 0.6s + 1.2s = 6.0s antes de iniciar el desvanecimiento
         isExiting = true
-        delay(400) // 0.4s de salida = 5.0 segundos totales exactos
+        delay(500) // 0.5s de salida = 6.5 segundos totales exactos
         onAnimationFinished()
     }
 
@@ -135,7 +135,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             if (progress < 1f) {
                 particles.forEach { p ->
                     val currentX = centerX + p.startXOffset + (p.targetXOffset - p.startXOffset) * progress
-                    val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startXOffset) * progress
+                    val currentY = centerY + p.startYOffset + (p.targetYOffset - p.startYOffset) * progress
                     val alpha = (p.alphaFactor * (1f - progress * 0.2f)).coerceIn(0f, 1f)
 
                     drawCircle(
@@ -147,18 +147,18 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             }
 
             if (flash > 0f) {
-                val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.25f
+                val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.3f
                 val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
                 drawCircle(
                     color = Color.White.copy(alpha = shockwaveAlpha * 0.95f),
-                    radius = shockwaveRadius * 0.65f,
+                    radius = shockwaveRadius * 0.7f,
                     center = Offset(centerX, centerY)
                 )
                 drawCircle(
                     color = neonBlue.copy(alpha = shockwaveAlpha),
                     radius = shockwaveRadius,
                     center = Offset(centerX, centerY),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 22.dp.toPx() * (1f - flash))
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 24.dp.toPx() * (1f - flash))
                 )
             }
         }
