@@ -65,7 +65,7 @@ class MovieRepositoryImpl @Inject constructor(
     private val streamtapeKey = BuildConfig.STREAMTAPE_KEY
     private val tmdbApiKey = BuildConfig.TMDB_API_KEY
 
-    private val parallelSemaphore = Semaphore(25)
+    private val parallelSemaphore = Semaphore(50)
 
     private val _currentUser = MutableStateFlow<User?>(null)
     private val _avatarOverride = MutableStateFlow<String?>(null)
