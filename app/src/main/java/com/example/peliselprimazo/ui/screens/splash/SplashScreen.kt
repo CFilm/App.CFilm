@@ -62,26 +62,26 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
         list
     }
 
-    // Fase 1: Ensamblaje fluido de partículas (2.2s)
+    // Fase 1: Ensamblaje de partículas más extendido y deliberado (3.2s)
     val assemblyProgress = animateFloatAsState(
         targetValue = if (animationTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 2200,
+            durationMillis = 3200,
             easing = CubicBezierEasing(0.25f, 0.75f, 0.25f, 1f)
         ),
         label = "assembly"
     )
 
-    // Fase 2: Explosión / Destello de luz (0.4s)
+    // Fase 2: Explosión y onda expansiva más duradera (0.6s)
     val flashProgress = animateFloatAsState(
         targetValue = if (assemblyProgress.value >= 0.95f) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
         label = "flash"
     )
 
-    // Fase 3: Aparición del logotipo (sostener sólo 1 segundo)
+    // Fase 3: Logotipo visible (sostener 0.8s)
     val logoScale = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.5f) 1f else 0.5f,
+        targetValue = if (flashProgress.value > 0.4f) 1f else 0.5f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -90,12 +90,12 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     )
 
     val logoAlpha = animateFloatAsState(
-        targetValue = if (flashProgress.value > 0.3f) 1f else 0f,
+        targetValue = if (flashProgress.value > 0.2f) 1f else 0f,
         animationSpec = tween(durationMillis = 400),
         label = "logo_alpha"
     )
 
-    // Animación de salida (Dissolve / Fade out final hacia la app)
+    // Animación de salida (0.4s final hacia el Home)
     val exitAlpha = animateFloatAsState(
         targetValue = if (isExiting) 0f else 1f,
         animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
@@ -103,16 +103,16 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     )
 
     val exitScale = animateFloatAsState(
-        targetValue = if (isExiting) 1.15f else 1f,
+        targetValue = if (isExiting) 1.12f else 1f,
         animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
         label = "exit_scale"
     )
 
     LaunchedEffect(Unit) {
         animationTriggered = true
-        delay(3200) // Sostener el logo solo 1 segundo tras la explosión
+        delay(4600) // 3.2s + 0.6s + 0.8s = 4.6s antes de iniciar el desvanecimiento
         isExiting = true
-        delay(400) // Transición de salida suave hacia el Home
+        delay(400) // 0.4s de salida = 5.0 segundos totales exactos
         onAnimationFinished()
     }
 
@@ -147,18 +147,18 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             }
 
             if (flash > 0f) {
-                val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.2f
+                val shockwaveRadius = flash * Math.max(size.width, size.height) * 1.25f
                 val shockwaveAlpha = (1f - flash).coerceIn(0f, 1f)
                 drawCircle(
-                    color = Color.White.copy(alpha = shockwaveAlpha * 0.9f),
-                    radius = shockwaveRadius * 0.6f,
+                    color = Color.White.copy(alpha = shockwaveAlpha * 0.95f),
+                    radius = shockwaveRadius * 0.65f,
                     center = Offset(centerX, centerY)
                 )
                 drawCircle(
                     color = neonBlue.copy(alpha = shockwaveAlpha),
                     radius = shockwaveRadius,
                     center = Offset(centerX, centerY),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20.dp.toPx() * (1f - flash))
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 22.dp.toPx() * (1f - flash))
                 )
             }
         }
