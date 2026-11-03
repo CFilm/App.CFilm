@@ -367,15 +367,22 @@ class MovieRepositoryImpl @Inject constructor(
 
                 val results = deferredMovies.awaitAll()
                 
-                // Conservar todo el contenido guardado en DB aunque su servidor ya no esté disponible
-                val existingEntities = movieDao.getAllMoviesSync()
-                val inactiveEntities = existingEntities.filter { !activeMovieIds.contains(it.id) }.map {
-                    it.copy(serverLinks = emptyList())
-                }
+                if (results.isNotEmpty()) {
+                    // Inserción única y atómica para contenido activo
+                    movieDao.insertMovies(results)
 
-                // Inserción única y atómica: La UI recibe portadas y metadatos juntos al instante
-                if (results.isNotEmpty() || inactiveEntities.isNotEmpty()) {
-                    movieDao.insertMovies(results + inactiveEntities)
+                    // Si el servidor está ONLINE y devolvió archivos, cualquier contenido previo de Streamtape
+                    // que ya no exista en activeMovieIds significa que el admin lo eliminó del servidor.
+                    val existingEntities = movieDao.getAllMoviesSync()
+                    val deletedByAdminEntities = existingEntities.filter { existing ->
+                        !activeMovieIds.contains(existing.id) &&
+                        existing.serverLinks.all { it.serverName.equals("Streamtape", ignoreCase = true) }
+                    }
+
+                    if (deletedByAdminEntities.isNotEmpty()) {
+                        Log.d("PrimazoSync", "Eliminando ${deletedByAdminEntities.size} contenidos eliminados por el administrador del servidor")
+                        movieDao.deleteMovies(deletedByAdminEntities)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("PrimazoSync", "Error en actualización: ${e.message}")
