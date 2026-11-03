@@ -426,6 +426,15 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            try {
+                val cached = repository.getAllContent().first()
+                if (cached.isNotEmpty()) {
+                    _isLoading.value = false
+                }
+            } catch (_: Exception) {}
+        }
+
+        viewModelScope.launch {
             allContent.collect { list ->
                 Log.d("CFilmHome", "AllContent collected: ${list.size} items")
                 if (list.isNotEmpty()) {
