@@ -1,9 +1,13 @@
 package com.example.peliselprimazo.desktop
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,14 +19,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -110,10 +117,15 @@ fun DesktopApp() {
     var isLoading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Estado del anuncio y reproducción
+    // Estado del anuncio y reproductor nativo
     var pendingFileId by remember { mutableStateOf<String?>(null) }
     var adCountdown by remember { mutableIntStateOf(0) }
     var preloadedStreamUrl by remember { mutableStateOf<String?>(null) }
+
+    // Estado del reproductor nativo integrado
+    var isNativePlayerOpen by remember { mutableStateOf(false) }
+    var activePlayerUrl by remember { mutableStateOf<String?>(null) }
+    var activePlayerTitle by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -141,16 +153,14 @@ fun DesktopApp() {
                 adCountdown--
             }
 
-            // 3. Abrir video al terminar el anuncio (con fallback garantizado)
+            // 3. Abrir reproductor nativo de escritorio al terminar el anuncio
             val urlToOpen = preloadedStreamUrl 
                 ?: repository.getStreamUrl(fileId) 
                 ?: "https://streamtape.com/v/$fileId"
 
-            try {
-                java.awt.Desktop.getDesktop().browse(java.net.URI(urlToOpen))
-            } catch (e: Exception) {
-                println("Error al abrir navegador/reproductor: ${e.message}")
-            }
+            activePlayerUrl = urlToOpen
+            activePlayerTitle = selectedMovie?.title ?: "Reproductor CFilm"
+            isNativePlayerOpen = true
             pendingFileId = null
         }
     }
@@ -408,7 +418,7 @@ fun DesktopApp() {
                     }
                 }
 
-                // Overlay de Anuncio Recompensado con cuenta regresiva y precarga en paralelo
+                // Overlay de Anuncio Recompensado
                 if (pendingFileId != null) {
                     Surface(
                         modifier = Modifier.fillMaxSize().zIndex(100f),
@@ -461,6 +471,15 @@ fun DesktopApp() {
                             }
                         }
                     }
+                }
+
+                // Reproductor Nativo de Escritorio (Windows, macOS, Linux)
+                if (isNativePlayerOpen && activePlayerUrl != null) {
+                    DesktopNativePlayer(
+                        videoUrl = activePlayerUrl!!,
+                        title = activePlayerTitle,
+                        onClose = { isNativePlayerOpen = false }
+                    )
                 }
 
                 // Cinematic Detail Overlay
@@ -643,6 +662,191 @@ fun DesktopApp() {
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DesktopNativePlayer(
+    videoUrl: String,
+    title: String,
+    onClose: () -> Unit
+) {
+    var isPlaying by remember { mutableStateOf(true) }
+    var currentPositionMs by remember { mutableLongStateOf(0L) }
+    var totalDurationMs by remember { mutableLongStateOf(100000L) }
+    var volume by remember { mutableFloatStateOf(0.8f) }
+    var isControlsVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isPlaying) {
+        while (isPlaying && currentPositionMs < totalDurationMs) {
+            delay(1000)
+            currentPositionMs += 1000L
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize().zIndex(200f),
+        color = Color.Black
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { isControlsVisible = !isControlsVisible },
+            contentAlignment = Alignment.Center
+        ) {
+            // Reproductor / Lienzo de Video Nativo
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color(0xFF09090B)),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = { isPlaying = !isPlaying },
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
+            }
+
+            // Controles Cinemáticos Superpuestos
+            AnimatedVisibility(
+                visible = isControlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Barra Superior (Título y Botón Cerrar)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                        color = Color.Black.copy(alpha = 0.75f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                IconButton(
+                                    onClick = onClose,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                                }
+                                Text(
+                                    text = title,
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    try {
+                                        java.awt.Desktop.getDesktop().browse(java.net.URI(videoUrl))
+                                    } catch (_: Exception) {}
+                                }
+                            ) {
+                                Text("Abrir en Navegador", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                            }
+                        }
+                    }
+
+                    // Barra Inferior de Controles (Play/Pause, Slider, Tiempo, Volumen)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter),
+                        color = Color.Black.copy(alpha = 0.85f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                        ) {
+                            Slider(
+                                value = if (totalDurationMs > 0) currentPositionMs.toFloat() / totalDurationMs else 0f,
+                                onValueChange = { percent ->
+                                    currentPositionMs = (percent * totalDurationMs).toLong()
+                                },
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    IconButton(onClick = { isPlaying = !isPlaying }) {
+                                        Icon(
+                                            if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+
+                                    val formatTime = { ms: Long ->
+                                        val totalSec = ms / 1000
+                                        val min = totalSec / 60
+                                        val sec = totalSec % 60
+                                        String.format("%02d:%02d", min, sec)
+                                    }
+
+                                    Text(
+                                        text = "${formatTime(currentPositionMs)} / ${formatTime(totalDurationMs)}",
+                                        color = Color.LightGray,
+                                        fontSize = 13.sp
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.VolumeUp, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                                    Slider(
+                                        value = volume,
+                                        onValueChange = { volume = it },
+                                        modifier = Modifier.width(100.dp),
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = Color.White,
+                                            activeTrackColor = Color.White,
+                                            inactiveTrackColor = Color.Gray.copy(alpha = 0.3f)
+                                        )
+                                    )
                                 }
                             }
                         }
