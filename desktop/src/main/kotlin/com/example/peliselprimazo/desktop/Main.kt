@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,7 @@ import com.example.peliselprimazo.desktop.data.DesktopRepository
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -108,11 +110,45 @@ fun DesktopApp() {
     var isLoading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
+    // Estado del anuncio y reproducción
+    var pendingFileId by remember { mutableStateOf<String?>(null) }
+    var adCountdown by remember { mutableIntStateOf(0) }
+    var preloadedStreamUrl by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         scope.launch {
             isLoading = true
             movies = repository.fetchMovies()
             isLoading = false
+        }
+    }
+
+    // Manejo del temporizador del anuncio y precarga simultánea en segundo plano
+    LaunchedEffect(pendingFileId) {
+        val fileId = pendingFileId
+        if (fileId != null) {
+            adCountdown = 5
+            preloadedStreamUrl = null
+
+            // 1. Iniciar extracción en segundo plano mientras corre el anuncio
+            scope.launch {
+                preloadedStreamUrl = repository.getStreamUrl(fileId)
+            }
+
+            // 2. Cuenta regresiva del anuncio de 5 segundos
+            while (adCountdown > 0) {
+                delay(1000)
+                adCountdown--
+            }
+
+            // 3. Abrir video al terminar el anuncio
+            val urlToOpen = preloadedStreamUrl ?: repository.getStreamUrl(fileId)
+            if (urlToOpen != null) {
+                try {
+                    java.awt.Desktop.getDesktop().browse(java.net.URI(urlToOpen))
+                } catch (_: Exception) {}
+            }
+            pendingFileId = null
         }
     }
 
@@ -369,7 +405,62 @@ fun DesktopApp() {
                     }
                 }
 
-                // Cinematic Detail Overlay matching Mobile layout (Seasons + Episodes for Series, Play for Movies)
+                // Overlay de Anuncio Recompensado con cuenta regresiva y precarga en paralelo
+                if (pendingFileId != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize().zIndex(100f),
+                        color = Color.Black.copy(alpha = 0.92f)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Card(
+                                modifier = Modifier.width(420.dp).padding(24.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181B)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(56.dp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        strokeWidth = 4.dp
+                                    )
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        text = "Anuncio Recompensado CFilm",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "El contenido comenzará automáticamente al finalizar el anuncio.",
+                                        color = Color.Gray,
+                                        fontSize = 13.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            text = "Iniciando en $adCountdown s...",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Cinematic Detail Overlay
                 selectedMovie?.let { movie ->
                     val seasons = remember(movie) {
                         val detected = movie.serverLinks.mapNotNull { it.season }.distinct().sorted()
@@ -473,7 +564,7 @@ fun DesktopApp() {
                                             }
                                             Spacer(modifier = Modifier.height(12.dp))
 
-                                            // Lista de Episodios con miniatura y descripción (idéntico al móvil)
+                                            // Lista de Episodios
                                             LazyColumn(
                                                 modifier = Modifier.fillMaxWidth().weight(1f),
                                                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -481,14 +572,7 @@ fun DesktopApp() {
                                                 items(episodes, key = { "${it.season}_${it.episode}_${it.fileId}" }) { ep ->
                                                     Surface(
                                                         modifier = Modifier.fillMaxWidth().clickable {
-                                                            scope.launch {
-                                                                val streamUrl = repository.getStreamUrl(ep.fileId)
-                                                                if (streamUrl != null) {
-                                                                    try {
-                                                                        java.awt.Desktop.getDesktop().browse(java.net.URI(streamUrl))
-                                                                    } catch (_: Exception) {}
-                                                                }
-                                                            }
+                                                            pendingFileId = ep.fileId
                                                         },
                                                         color = Color(0xFF27272A),
                                                         shape = RoundedCornerShape(12.dp)
@@ -543,14 +627,7 @@ fun DesktopApp() {
                                                 onClick = {
                                                     val firstLink = movie.serverLinks.firstOrNull()
                                                     if (firstLink != null) {
-                                                        scope.launch {
-                                                            val streamUrl = repository.getStreamUrl(firstLink.fileId)
-                                                            if (streamUrl != null) {
-                                                                try {
-                                                                    java.awt.Desktop.getDesktop().browse(java.net.URI(streamUrl))
-                                                                } catch (_: Exception) {}
-                                                            }
-                                                        }
+                                                        pendingFileId = firstLink.fileId
                                                     }
                                                 },
                                                 modifier = Modifier.fillMaxWidth().height(48.dp),

@@ -150,10 +150,10 @@ class DesktopRepository {
             val groupedByTitle = parsedFiles.groupBy { (parsed, _, _) ->
                 val titleLower = parsed.cleanTitle.lowercase()
                     .replace(Regex("[-–—:]"), " ")
-                    .replace(Regex("\\b(season|s\\d+|hen|part|cour|arc|ova|special|movie|uncut|season\\s*\\d+|temporada\\s*\\d+|capitulo\\s*\\d+|ep\\s*\\d+|vol\\s*\\d+)\\b.*"), "")
+                    .replace(Regex("(?i)\\b(season|s\\d+|temporada|temp|t\\d+|hen|part|cour|arc|ova|special|movie|uncut|capitulo|cap|ep|episodio)\\b.*"), "")
                     .replace(Regex("[^a-z0-9]"), " ")
                     .trim()
-                val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
+                val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() && !it.all { c -> c.isDigit() } }
                 val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
                 if (parsed.isTv || parsed.isAnime) "tv|$baseKey" else "movie|$baseKey|${parsed.year ?: "unknown"}"
             }
