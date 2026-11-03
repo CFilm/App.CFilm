@@ -119,7 +119,11 @@ object FileNameParser {
             cleanTitle = cleanTitle.replace(Regex("(?i)\\b$tag\\b"), "")
         }
 
-        cleanTitle = cleanTitle.replace(Regex("[()\\[\\]{}]"), " ")
+        // Limpiar prefijos de temporada al inicio (ej. "S10 Friends" -> "Friends")
+        cleanTitle = cleanTitle.replace(Regex("(?i)^s\\d{1,2}\\b"), "")
+            .replace(Regex("(?i)^season\\s*\\d{1,2}\\b"), "")
+            .replace(Regex("(?i)^temporada\\s*\\d{1,2}\\b"), "")
+            .replace(Regex("[()\\[\\]{}]"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
             

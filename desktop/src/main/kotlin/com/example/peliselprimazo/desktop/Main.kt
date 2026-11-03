@@ -141,12 +141,15 @@ fun DesktopApp() {
                 adCountdown--
             }
 
-            // 3. Abrir video al terminar el anuncio
-            val urlToOpen = preloadedStreamUrl ?: repository.getStreamUrl(fileId)
-            if (urlToOpen != null) {
-                try {
-                    java.awt.Desktop.getDesktop().browse(java.net.URI(urlToOpen))
-                } catch (_: Exception) {}
+            // 3. Abrir video al terminar el anuncio (con fallback garantizado)
+            val urlToOpen = preloadedStreamUrl 
+                ?: repository.getStreamUrl(fileId) 
+                ?: "https://streamtape.com/v/$fileId"
+
+            try {
+                java.awt.Desktop.getDesktop().browse(java.net.URI(urlToOpen))
+            } catch (e: Exception) {
+                println("Error al abrir navegador/reproductor: ${e.message}")
             }
             pendingFileId = null
         }
