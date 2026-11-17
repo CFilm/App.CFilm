@@ -20,3 +20,6 @@ rootProject.name = "CFilm"
 include(":app")
 include(":desktop")
 include(":shared")
+include(":core:model")
+include(":core:database")
+include(":core:network")

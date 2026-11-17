@@ -9,6 +9,8 @@ interface MovieRepository {
     // Content fetching
     fun getAllContent(): Flow<List<Movie>>
     fun getPagedContent(): Flow<PagingData<Movie>>
+    fun getPagedMovies(): Flow<PagingData<Movie>>
+    fun getPagedSeries(): Flow<PagingData<Movie>>
     fun getMovies(): Flow<List<Movie>>
     fun getSeries(): Flow<List<Movie>>
     fun getTrends(): Flow<List<Movie>>
@@ -52,6 +54,7 @@ interface MovieRepository {
     fun getUser(): Flow<User?>
     suspend fun register(username: String, email: String, password: String)
     suspend fun login(email: String, password: String): Boolean
+    suspend fun sendPasswordResetEmail(email: String): Pair<Boolean, String>
     suspend fun logout()
     suspend fun updateAvatar(uri: String)
 }

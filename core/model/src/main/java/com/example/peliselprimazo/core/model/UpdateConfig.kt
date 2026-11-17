@@ -1,0 +1,10 @@
+package com.example.peliselprimazo.core.model
+
+data class UpdateConfig(
+    val latestVersionCode: Int,
+    val latestVersionName: String,
+    val updateUrl: String,
+    val isUpdateAvailable: Boolean = false,
+    val isForceUpdate: Boolean = false,
+    val visualFlags: Map<String, String> = emptyMap()
+)

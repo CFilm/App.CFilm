@@ -170,6 +170,31 @@ class DetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun sendPasswordResetEmail(email: String, onResult: (Boolean, String) -> Unit) {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank()) {
+            onResult(false, "Ingresa tu correo para restablecer la contraseña.")
+            return
+        }
+        viewModelScope.launch {
+            _error.value = null
+            _isLoadingAuth.value = true
+            try {
+                val (success, message) = repository.sendPasswordResetEmail(cleanEmail)
+                _isLoadingAuth.value = false
+                if (!success) {
+                    _error.value = message
+                }
+                onResult(success, message)
+            } catch (e: Exception) {
+                val msg = e.localizedMessage ?: "Error al enviar correo de recuperación"
+                _error.value = msg
+                _isLoadingAuth.value = false
+                onResult(false, msg)
+            }
+        }
+    }
 }
 
 sealed class DetailUiState {

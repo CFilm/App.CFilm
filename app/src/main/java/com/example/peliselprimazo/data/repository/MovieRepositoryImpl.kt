@@ -103,6 +103,24 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getPagedMovies(): Flow<PagingData<Movie>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20, prefetchDistance = 2),
+            pagingSourceFactory = { movieDao.getPagedMoviesByType(ContentType.MOVIE.name) }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
+    }
+
+    override fun getPagedSeries(): Flow<PagingData<Movie>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20, prefetchDistance = 2),
+            pagingSourceFactory = { movieDao.getPagedMoviesByType(ContentType.TV.name) }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
+    }
+
     override fun getMovies(): Flow<List<Movie>> = movieDao.getMoviesByType(ContentType.MOVIE.name).map { entities ->
         entities.map { it.toDomain() }
     }
@@ -679,6 +697,37 @@ class MovieRepositoryImpl @Inject constructor(
             true
         } catch (_: Exception) {
             false
+        }
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String): Pair<Boolean, String> {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank()) {
+            return Pair(false, "Escribe tu correo para restablecer la contraseña.")
+        }
+        return try {
+            Log.d("MovieRepository", "Enviando correo de restablecimiento a: '$cleanEmail'")
+            withTimeout(15000L) {
+                firebaseAuth.sendPasswordResetEmail(cleanEmail).await()
+            }
+            Log.d("MovieRepository", "Correo de restablecimiento enviado con éxito a: '$cleanEmail'")
+            Pair(true, "Se ha enviado un correo a $cleanEmail para restablecer tu contraseña. Revisa tu bandeja de entrada o Spam.")
+        } catch (e: TimeoutCancellationException) {
+            Log.e("MovieRepository", "Tiempo de espera agotado al enviar correo de recuperación a: '$cleanEmail'")
+            Pair(false, "El servidor tardó demasiado en responder. Verifica tu conexión e inténtalo de nuevo.")
+        } catch (e: com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+            Log.e("MovieRepository", "Usuario no encontrado en Firebase: ${e.message}")
+            Pair(false, "El correo $cleanEmail no está registrado.")
+        } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+            Log.e("MovieRepository", "Formato de correo inválido: ${e.message}")
+            Pair(false, "El correo ingresado no es válido.")
+        } catch (e: com.google.firebase.FirebaseNetworkException) {
+            Log.e("MovieRepository", "Error de red al conectar con Firebase: ${e.message}")
+            Pair(false, "Error de red. Verifica tu conexión a internet.")
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error enviando correo de recuperación: ${e.message}", e)
+            val msg = e.localizedMessage ?: "Error al enviar el correo de recuperación."
+            Pair(false, msg)
         }
     }
 

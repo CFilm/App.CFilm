@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -80,6 +81,7 @@ fun HomeScreen(
     
     val moviesListFiltered by viewModel.moviesListFiltered.collectAsState()
     val seriesListFiltered by viewModel.seriesListFiltered.collectAsState()
+    val homeListFiltered by viewModel.homeListFiltered.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
 
     val watchingContent by viewModel.watchingContent.collectAsState()
@@ -97,21 +99,22 @@ fun HomeScreen(
 
     val coroutineScope = rememberCoroutineScope()
     var showAuthDialog by remember { mutableStateOf(false) }
+    var showSupportDialog by remember { mutableStateOf(false) }
     var pendingMovieToPlay by remember { mutableStateOf<Movie?>(null) }
     var showUpdateDialog by rememberSaveable { mutableStateOf(true) }
 
-    val appTitle = updateConfig?.visualFlags?.get("ui_app_title") ?: "CFilm"
-    val homeAnnouncement = updateConfig?.visualFlags?.get("ui_home_announcement")
-    val loadingText = updateConfig?.visualFlags?.get("ui_loading_text") ?: "Preparando el cine..."
-    val cambiosStatus = updateConfig?.visualFlags?.get("Cambios") ?: ""
+    val appTitle = updateConfig?.visualFlags?.getOrDefault("ui_app_title", "CFilm") ?: "CFilm"
+    val homeAnnouncement = updateConfig?.visualFlags?.getOrDefault("ui_home_announcement", "")?.ifBlank { null }
+    val loadingText = updateConfig?.visualFlags?.getOrDefault("ui_loading_text", "Preparando el cine...") ?: "Preparando el cine..."
+    val cambiosStatus = updateConfig?.visualFlags?.getOrDefault("Cambios", "") ?: ""
 
     LaunchedEffect(user?.isLoggedIn) {
-        if (user?.isLoggedIn == true && pendingMovieToPlay != null) {
-            val movie = pendingMovieToPlay!!
+        val targetMovie = pendingMovieToPlay
+        if (user?.isLoggedIn == true && targetMovie != null) {
             pendingMovieToPlay = null
             showAuthDialog = false
             delay(300)
-            onDirectPlayClick(movie)
+            onDirectPlayClick(targetMovie)
         }
     }
 
@@ -202,9 +205,26 @@ fun HomeScreen(
                     ) { page ->
                         Box(modifier = Modifier.fillMaxSize()) {
                             when (page) {
-                                0 -> HomeSectionsContent(homeSections, onMovieClick, handlePlayRequest, homeAnnouncement)
-                                1 -> CategoryTabContent(movieSections, moviesListFiltered, selectedGenre, onMovieClick)
-                                2 -> CategoryTabContent(seriesSections, seriesListFiltered, selectedGenre, onMovieClick)
+                                0 -> HomeSectionsContent(
+                                    sections = homeSections,
+                                    filteredList = homeListFiltered,
+                                    selectedGenre = selectedGenre,
+                                    onMovieClick = onMovieClick,
+                                    onDirectPlayClick = handlePlayRequest,
+                                    announcement = homeAnnouncement as String?
+                                )
+                                1 -> CategoryTabContent(
+                                    sections = movieSections,
+                                    filteredList = moviesListFiltered,
+                                    selectedGenre = selectedGenre,
+                                    onMovieClick = onMovieClick
+                                )
+                                2 -> CategoryTabContent(
+                                    sections = seriesSections,
+                                    filteredList = seriesListFiltered,
+                                    selectedGenre = selectedGenre,
+                                    onMovieClick = onMovieClick
+                                )
                                 3 -> ProfileScreenContent(
                                     user = user,
                                     watching = watchingContent,
@@ -216,7 +236,8 @@ fun HomeScreen(
                                     viewModel = viewModel,
                                     onMovieClick = onMovieClick,
                                     onDirectPlayClick = handlePlayRequest,
-                                    cambiosStatus = cambiosStatus 
+                                    cambiosStatus = cambiosStatus,
+                                    onSupportClick = { showSupportDialog = true }
                                 )
                             }
                         }
@@ -232,6 +253,7 @@ fun HomeScreen(
                 isLoading = isLoading,
                 isRefreshing = isRefreshing,
                 onSearchClick = { viewModel.onSearchActiveChange(true) },
+                onSupportClick = { showSupportDialog = true },
                 modifier = Modifier.zIndex(5f)
             )
         } else {
@@ -263,6 +285,19 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+
+        // BURBUJA EXPANDIBLE DE GÉNEROS (Arriba de la barra inferior / 'Perfil')
+        if (!isSearchActive && pagerState.currentPage in 0..2) {
+            ExpandableGenreBubble(
+                selectedGenre = selectedGenre,
+                onGenreSelected = { viewModel.setSelectedGenre(it) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(bottom = 85.dp, end = 16.dp)
+                    .zIndex(15f)
+            )
         }
 
         // BARRA INFERIOR (Bottom navigation)
@@ -312,10 +347,21 @@ fun HomeScreen(
                 error = error,
                 onLogin = { e, p -> viewModel.login(e, p) { } },
                 onRegister = { u, e, p -> viewModel.register(u, e, p) { } },
+                onResetPassword = { email, callback ->
+                    viewModel.sendPasswordResetEmail(email) { isSuccess, msg ->
+                        callback(isSuccess, msg)
+                    }
+                },
                 onDismiss = { 
                     showAuthDialog = false 
                     pendingMovieToPlay = null
                 }
+            )
+        }
+
+        if (showSupportDialog) {
+            SupportDialog(
+                onDismiss = { showSupportDialog = false }
             )
         }
         
@@ -395,7 +441,8 @@ fun ProfileScreenContent(
     viewModel: HomeViewModel,
     onMovieClick: (Int) -> Unit,
     onDirectPlayClick: (Movie) -> Unit,
-    cambiosStatus: String
+    cambiosStatus: String,
+    onSupportClick: () -> Unit
 ) {
     var selectedListCategory by remember { mutableStateOf<String?>(null) }
     
@@ -426,7 +473,8 @@ fun ProfileScreenContent(
                     totalHours = totalHours,
                     onCategoryClick = { selectedListCategory = it },
                     viewModel = viewModel,
-                    cambiosStatus = cambiosStatus 
+                    cambiosStatus = cambiosStatus,
+                    onSupportClick = onSupportClick
                 )
             } else {
                 val listToShow = when(category) {
@@ -459,7 +507,8 @@ fun ProfileMainContent(
     totalHours: Long,
     onCategoryClick: (String) -> Unit,
     viewModel: HomeViewModel,
-    cambiosStatus: String
+    cambiosStatus: String,
+    onSupportClick: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -467,6 +516,14 @@ fun ProfileMainContent(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { viewModel.updateAvatar(it.toString()) }
+    }
+
+    var showPremiumDialog by remember { mutableStateOf(false) }
+
+    if (showPremiumDialog) {
+        PremiumBenefitsDialog(
+            onDismiss = { showPremiumDialog = false }
+        )
     }
 
     LazyColumn(
@@ -500,21 +557,85 @@ fun ProfileMainContent(
                     fontWeight = FontWeight.Bold
                 )
 
-                if (cambiosStatus.isNotBlank()) {
+                // Plan Badge
+                Surface(
+                    modifier = Modifier.padding(top = 8.dp),
+                    color = Color.White.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                ) {
+                    Text(
+                        text = "Plan Gratuito (General)",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        color = Color.LightGray,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // CFilm Premium Button / Card (Hidden for now)
+                if (false) {
                     Surface(
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                    ) {
-                        Text(
-                            text = cambiosStatus,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .clickable { showPremiumDialog = true },
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF1E1E1E),
+                        border = BorderStroke(
+                            1.5.dp,
+                            Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA000)))
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                                    modifier = Modifier.size(44.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFFD700),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                                Column {
+                                    Text(
+                                        text = "CFilm Premium",
+                                        color = Color(0xFFFFD700),
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 16.sp
+                                    )
+                                    Text(
+                                        text = "Toca para ver beneficios VIP",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                            Button(
+                                onClick = { showPremiumDialog = true },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFD700),
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Ver Beneficios", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -604,8 +725,8 @@ fun ProfileMainContent(
         item {
             Spacer(modifier = Modifier.height(32.dp))
             Text(text = "Ajustes", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            ProfileSettingItem(title = "Soporte y Reportar Falla", icon = Icons.Default.SupportAgent, onClick = onSupportClick)
             ProfileSettingItem(title = "Limpiar Caché", icon = Icons.Default.Delete, onClick = { viewModel.clearCache() })
-            ProfileSettingItem(title = "Anuncios Test Suite", icon = Icons.Default.BugReport, onClick = { viewModel.launchTestSuite(activity) })
             if (user?.isLoggedIn == true) {
                 ProfileSettingItem(title = "Cerrar Sesión", icon = Icons.AutoMirrored.Filled.ExitToApp, iconColor = Color.Red, textColor = Color.Red, onClick = { viewModel.logout() })
             }

@@ -24,7 +24,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.SupportAgent
+import com.example.peliselprimazo.ui.components.SupportDialog
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -240,6 +243,7 @@ fun NativePlayer(
     var currentPosition by remember { mutableStateOf(0L) }
     var duration by remember { mutableStateOf(0L) }
     var showControls by remember { mutableStateOf(true) }
+    var showSupportDialog by remember { mutableStateOf(false) }
 
     var currentVolume by remember { mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat()) }
     var currentBrightness by remember {
@@ -653,6 +657,34 @@ fun NativePlayer(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
 
+                    // Botón Reportar Falla (Soporte)
+                    Surface(
+                        onClick = { showSupportDialog = true },
+                        color = Color.Black.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SupportAgent,
+                                contentDescription = "Soporte",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Reportar",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     // Selector de Velocidad
                     var currentSpeed by remember { mutableFloatStateOf(1.0f) }
                     var showSpeedMenu by remember { mutableStateOf(false) }
@@ -954,6 +986,12 @@ fun NativePlayer(
                         }
                     }
                 }
+            }
+
+            if (showSupportDialog) {
+                SupportDialog(
+                    onDismiss = { showSupportDialog = false }
+                )
             }
         }
     }

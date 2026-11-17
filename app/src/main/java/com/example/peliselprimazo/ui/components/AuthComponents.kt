@@ -36,18 +36,23 @@ fun AuthDialog(
     error: String?,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
+    onResetPassword: ((String, (Boolean, String) -> Unit) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
-    var isRegisterMode by remember { mutableStateOf(true) }
+    var isRegisterMode by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isResetSuccess by remember { mutableStateOf<Boolean?>(null) }
+    var resetFeedback by remember { mutableStateOf<String?>(null) }
     
     val focusManager = LocalFocusManager.current
 
     val actionTrigger = {
         focusManager.clearFocus()
+        resetFeedback = null
+        isResetSuccess = null
         if (isRegisterMode) {
             if (username.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
                 onRegister(username, email, password)
@@ -146,6 +151,56 @@ fun AuthDialog(
                     onImeAction = actionTrigger
                 )
 
+                if (!isRegisterMode) {
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable(enabled = !isLoading) {
+                                val cleanEmail = email.trim()
+                                if (cleanEmail.isNotBlank()) {
+                                    if (onResetPassword != null) {
+                                        resetFeedback = "Enviando enlace..."
+                                        isResetSuccess = null
+                                        onResetPassword.invoke(cleanEmail) { success, msg ->
+                                            resetFeedback = msg
+                                            isResetSuccess = success
+                                        }
+                                    } else {
+                                        resetFeedback = "No se puede restablecer la contraseña en esta vista."
+                                        isResetSuccess = false
+                                    }
+                                } else {
+                                    resetFeedback = "Escribe tu correo arriba para restablecer la contraseña."
+                                    isResetSuccess = false
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (resetFeedback != null) {
+                    val textColor = when (isResetSuccess) {
+                        true -> Color(0xFF4CAF50)
+                        false -> MaterialTheme.colorScheme.error
+                        null -> MaterialTheme.colorScheme.primary
+                    }
+                    Text(
+                        text = resetFeedback!!,
+                        color = textColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
                 if (error != null) {
                     Text(
                         text = error,
@@ -156,7 +211,7 @@ fun AuthDialog(
                     )
                 }
 
-                Spacer(Modifier.height(40.dp))
+                Spacer(Modifier.height(32.dp))
 
                 Button(
                     onClick = actionTrigger,
@@ -186,7 +241,8 @@ fun AuthDialog(
                 Row(
                     modifier = Modifier.clickable { 
                         isRegisterMode = !isRegisterMode 
-                        password = "" // Clear password for security
+                        password = ""
+                        resetFeedback = null
                     },
                     verticalAlignment = Alignment.CenterVertically
                 ) {

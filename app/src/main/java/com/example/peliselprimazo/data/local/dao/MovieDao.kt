@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MovieDao {
-    @Query("SELECT * FROM movies ORDER BY title ASC")
+    @Query("SELECT * FROM movies ORDER BY lastUpdated DESC, id DESC")
     fun getAllMovies(): Flow<List<MovieEntity>>
 
     @Query("SELECT * FROM movies")
@@ -16,7 +16,10 @@ interface MovieDao {
     @Query("SELECT * FROM movies ORDER BY lastUpdated DESC")
     fun getPagedMovies(): PagingSource<Int, MovieEntity>
 
-    @Query("SELECT * FROM movies WHERE contentType = :type ORDER BY title ASC")
+    @Query("SELECT * FROM movies WHERE contentType = :type ORDER BY lastUpdated DESC")
+    fun getPagedMoviesByType(type: String): PagingSource<Int, MovieEntity>
+
+    @Query("SELECT * FROM movies WHERE contentType = :type ORDER BY lastUpdated DESC, id DESC")
     fun getMoviesByType(type: String): Flow<List<MovieEntity>>
 
     @Query("SELECT * FROM movies WHERE id = :id")

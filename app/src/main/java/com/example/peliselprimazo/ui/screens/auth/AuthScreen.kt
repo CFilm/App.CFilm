@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.peliselprimazo.ui.screens.home.HomeViewModel
@@ -35,9 +36,11 @@ fun AuthScreen(
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isResetSuccess by remember { mutableStateOf<Boolean?>(null) }
+    var resetFeedback by remember { mutableStateOf<String?>(null) }
     
     val error by viewModel.error.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val isLoadingAuth by viewModel.isLoadingAuth.collectAsState()
 
     Box(
         modifier = Modifier
@@ -124,6 +127,49 @@ fun AuthScreen(
                 )
             )
 
+            if (isLogin) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Text(
+                        text = "¿Olvidaste tu contraseña?",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable(enabled = !isLoadingAuth) {
+                            val cleanEmail = email.trim()
+                            if (cleanEmail.isNotBlank()) {
+                                resetFeedback = "Enviando enlace..."
+                                isResetSuccess = null
+                                viewModel.sendPasswordResetEmail(cleanEmail) { success, msg ->
+                                    resetFeedback = msg
+                                    isResetSuccess = success
+                                }
+                            } else {
+                                resetFeedback = "Escribe tu correo arriba para restablecer la contraseña."
+                                isResetSuccess = false
+                            }
+                        }
+                    )
+                }
+            }
+
+            if (resetFeedback != null) {
+                val textColor = when (isResetSuccess) {
+                    true -> Color(0xFF4CAF50)
+                    false -> MaterialTheme.colorScheme.error
+                    null -> MaterialTheme.colorScheme.primary
+                }
+                Text(
+                    text = resetFeedback!!,
+                    color = textColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+            }
+
             AnimatedVisibility(visible = error != null) {
                 Text(
                     text = error ?: "",
@@ -145,9 +191,9 @@ fun AuthScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !isLoading && email.isNotBlank() && password.isNotBlank() && (isLogin || username.isNotBlank())
+                enabled = !isLoadingAuth && email.isNotBlank() && password.isNotBlank() && (isLogin || username.isNotBlank())
             ) {
-                if (isLoading) {
+                if (isLoadingAuth) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
                 } else {
                     Text(if (isLogin) "Iniciar Sesión" else "Registrarse")

@@ -23,12 +23,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.peliselprimazo.ui.components.ParticleLoading
 
+import androidx.compose.material.icons.filled.SupportAgent
+
 @Composable
 fun TopBarHeader(
     appTitle: String,
     isLoading: Boolean,
     isRefreshing: Boolean,
     onSearchClick: () -> Unit,
+    onSupportClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -88,8 +91,15 @@ fun TopBarHeader(
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
                 )
-                IconButton(onClick = onSearchClick) {
-                    Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color.White)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onSearchClick) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color.White)
+                    }
+                    if (onSupportClick != null) {
+                        IconButton(onClick = onSupportClick) {
+                            Icon(Icons.Default.SupportAgent, contentDescription = "Soporte", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
             }
         }

@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.peliselprimazo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 17
-        versionName = "2.4.18"
+        versionCode = 18
+        versionName = "2.4.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -34,6 +34,7 @@ android {
         buildConfigField("String", "JELLYFIN_API_KEY", "\"${secrets["JELLYFIN_API_KEY"] ?: ""}\"")
         buildConfigField("String", "STREAMTAPE_LOGIN", "\"${secrets["STREAMTAPE_LOGIN"] ?: ""}\"")
         buildConfigField("String", "STREAMTAPE_KEY", "\"${secrets["STREAMTAPE_KEY"] ?: ""}\"")
+        buildConfigField("String", "SUPPORT_EMAIL", "\"${secrets["SUPPORT_EMAIL"] ?: "alejandropalma058@gmail.com"}\"")
     }
 
     buildTypes {
@@ -59,6 +60,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":core:database"))
+    implementation(project(":core:network"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

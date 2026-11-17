@@ -28,6 +28,9 @@ import com.example.peliselprimazo.ui.components.AuthDialog
 import com.example.peliselprimazo.ui.components.ParticleLoading
 import com.example.peliselprimazo.ui.screens.detail.components.*
 
+import androidx.compose.material.icons.filled.SupportAgent
+import com.example.peliselprimazo.ui.components.SupportDialog
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -49,6 +52,7 @@ fun DetailScreen(
     
     var showEpisodeSheet by remember { mutableStateOf(false) }
     var showNoServerDialog by remember { mutableStateOf(false) }
+    var showSupportDialog by remember { mutableStateOf(false) }
     var currentTrailerUrl by remember { mutableStateOf<String?>(null) }
     
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -77,6 +81,14 @@ fun DetailScreen(
                         modifier = Modifier.padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
                     ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showSupportDialog = true },
+                        modifier = Modifier.padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.SupportAgent, contentDescription = "Soporte", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -235,7 +247,16 @@ fun DetailScreen(
                             pendingAction = null
                         }
                     },
+                    onResetPassword = { email, callback ->
+                        viewModel.sendPasswordResetEmail(email, callback)
+                    },
                     onDismiss = { showAuthDialog = false }
+                )
+            }
+
+            if (showSupportDialog) {
+                SupportDialog(
+                    onDismiss = { showSupportDialog = false }
                 )
             }
         }

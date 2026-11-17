@@ -1,0 +1,3 @@
+- [ ] 1. Analizar y refactorizar internamente `HomeViewModel` para separar lógica de filtrado/búsqueda sin alterar API pública.
+- [ ] 2. Limpiar y estructurar `HomeScreen` extrayendo bloques repetitivos en submódulos de UI sin alterar la interfaz visual.
+- [ ] 3. Verificar compilación exitosa (`gradle_build`) y correcto funcionamiento.
