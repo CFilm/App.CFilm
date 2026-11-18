@@ -260,7 +260,25 @@ class MovieRepositoryImpl @Inject constructor(
 
                 // Paso 1: Inserción inmediata de elementos con datos locales parseados (< 1 segundo)
                 val initialEntities = grouped.values.map { items ->
-                    val primaryInfo = items.first().first
+                    val primaryInfo = items.map { it.first }
+                        .maxByOrNull { info ->
+                            var score = 0
+                            if (info.cleanTitle.length > 2 && info.cleanTitle.toIntOrNull() == null) score += 10
+                            if (info.isAnime) score += 5
+                            if (info.isTv) score += 3
+                            if (info.year != null) score += 2
+                            score
+                        } ?: items.first().first
+
+                    val isAnimeGroup = items.any { it.first.isAnime } || primaryInfo.cleanTitle.lowercase().contains("anime")
+                    val isTvGroup = isAnimeGroup || items.any { it.first.isTv } || items.any { it.second.season != null || it.second.episode != null }
+
+                    val resolvedContentType = when {
+                        isAnimeGroup -> ContentType.ANIME.name
+                        isTvGroup -> ContentType.TV.name
+                        else -> ContentType.MOVIE.name
+                    }
+
                     val allLinks = items.map { it.second }.distinctBy { "${it.serverName}_${it.fileId}" }
                     val id = items.first().third
                     activeMovieIds.add(id)
@@ -289,11 +307,7 @@ class MovieRepositoryImpl @Inject constructor(
                         releaseDate = existing?.releaseDate ?: primaryInfo.year ?: "Desconocido",
                         rating = existing?.rating ?: 0.0,
                         serverLinks = mergedLinks,
-                        contentType = when {
-                            primaryInfo.isAnime -> ContentType.ANIME.name
-                            primaryInfo.isTv -> ContentType.TV.name
-                            else -> ContentType.MOVIE.name
-                        },
+                        contentType = existing?.contentType ?: resolvedContentType,
                         genres = existing?.genres ?: emptyList(),
                         year = primaryInfo.year,
                         trailerUrl = existing?.trailerUrl,
@@ -340,17 +354,29 @@ class MovieRepositoryImpl @Inject constructor(
                         async(Dispatchers.IO) {
                             parallelSemaphore.withPermit {
                                 try {
-                                    val primaryInfo = FileNameParser.parseFileName(entity.title)
+                                    val isTvOrAnime = entity.contentType == ContentType.TV.name || entity.contentType == ContentType.ANIME.name
+                                    val primaryInfo = FileNameParser.parseFileName(entity.title).copy(
+                                        isTv = isTvOrAnime,
+                                        isAnime = entity.contentType == ContentType.ANIME.name
+                                    )
                                     val maxSeason = entity.serverLinks.mapNotNull { it.season }.maxOrNull()
                                     val tmdbData = tmdbEnricher.fetchTmdbData(primaryInfo, maxSeason)
 
                                     if (tmdbData != null) {
+                                        val isAnimeGenre = tmdbData.genres.any { g -> g.contains("Anime", ignoreCase = true) || g.contains("Animación", ignoreCase = true) }
+                                        val updatedContentType = when {
+                                            entity.contentType == ContentType.ANIME.name || (isTvOrAnime && isAnimeGenre) -> ContentType.ANIME.name
+                                            isTvOrAnime -> ContentType.TV.name
+                                            else -> ContentType.MOVIE.name
+                                        }
+
                                         entity.copy(
                                             title = tmdbData.title,
                                             overview = tmdbData.overview,
                                             posterUrl = tmdbData.posterUrl ?: entity.posterUrl,
                                             backdropUrl = tmdbData.backdropUrl ?: entity.backdropUrl,
                                             rating = tmdbData.rating,
+                                            contentType = updatedContentType,
                                             genres = tmdbData.genres,
                                             trailerUrl = tmdbData.trailerUrl,
                                             cast = tmdbData.cast,
