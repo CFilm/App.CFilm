@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <!-- Dark Background -->
+    <path
+        android:fillColor="#121212"
+        android:pathData="M0,0h320v180h-320z"/>
+    <!-- Red Accent Glow -->
+    <path
+        android:fillColor="#E50914"
+        android:pathData="M160,30 C220,30 260,70 260,90 C260,110 220,150 160,150 C100,150 60,110 60,90 C60,70 100,30 160,30 Z"
+        android:fillAlpha="0.25"/>
+    <!-- Play Icon Triangle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M145,70 L190,90 L145,110 Z"/>
+</vector>

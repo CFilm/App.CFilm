@@ -59,13 +59,6 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         Log.d("CFilmMain", "MainActivity onCreate started")
         
-        try {
-            adsManager.init(this)
-            Log.d("CFilmMain", "AdsManager initialized successfully")
-        } catch (e: Exception) {
-            Log.e("CFilmMain", "Error initializing ads: ${e.message}", e)
-        }
-        
         currentIntent = intent
         enableEdgeToEdge()
         

@@ -78,12 +78,21 @@ class MovieRepositoryImpl @Inject constructor(
         firebaseAuth.addAuthStateListener { auth ->
             val firebaseUser = auth.currentUser
             if (firebaseUser != null) {
-                _currentUser.value = User(
-                    username = firebaseUser.displayName ?: "Usuario",
-                    email = firebaseUser.email ?: "",
-                    profilePictureUri = firebaseUser.photoUrl?.toString(),
-                    isLoggedIn = true
-                )
+                CoroutineScope(Dispatchers.IO).launch {
+                    var isVip = false
+                    try {
+                        val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
+                        isVip = doc.getBoolean("isVip") ?: false
+                    } catch (_: Exception) {}
+
+                    _currentUser.value = User(
+                        username = firebaseUser.displayName ?: "Usuario",
+                        email = firebaseUser.email ?: "",
+                        profilePictureUri = firebaseUser.photoUrl?.toString(),
+                        isLoggedIn = true,
+                        isVip = isVip
+                    )
+                }
             } else {
                 _currentUser.value = null
             }
@@ -249,148 +258,66 @@ class MovieRepositoryImpl @Inject constructor(
 
                 val activeMovieIds = mutableSetOf<Int>()
 
-                // Carga Atómica en 1 solo paso: Procesamiento paralelo en memoria con TMDB y caché antes de guardar en DB
-                val deferredMovies = grouped.values.map { items ->
-                    async(Dispatchers.IO) {
-                        val primaryInfo = items.first().first
-                        val allLinks = items.map { it.second }.distinctBy { "${it.serverName}_${it.fileId}" }
-                        val id = items.first().third
-                        activeMovieIds.add(id)
+                // Paso 1: Inserción inmediata de elementos con datos locales parseados (< 1 segundo)
+                val initialEntities = grouped.values.map { items ->
+                    val primaryInfo = items.first().first
+                    val allLinks = items.map { it.second }.distinctBy { "${it.serverName}_${it.fileId}" }
+                    val id = items.first().third
+                    activeMovieIds.add(id)
 
-                        val existing = movieDao.getMovieById(id)
-                        val existingNonStreamtape = existing?.serverLinks?.filter { !it.serverName.equals("Streamtape", true) } ?: emptyList()
-                        val mergedLinks = (allLinks + existingNonStreamtape).distinctBy { "${it.serverName}_${it.fileId}" }
+                    val existing = movieDao.getMovieById(id)
+                    val existingNonStreamtape = existing?.serverLinks?.filter { !it.serverName.equals("Streamtape", true) } ?: emptyList()
+                    val mergedLinks = (allLinks + existingNonStreamtape).distinctBy { "${it.serverName}_${it.fileId}" }
 
-                        val isLiked = if (remoteData != null) remoteData.liked.contains(id) else existing?.isLiked ?: false
-                        val isSaved = if (remoteData != null) remoteData.saved.contains(id) else existing?.isSaved ?: false
-                        val isWatchLater = if (remoteData != null) remoteData.watchLater.contains(id) else existing?.isWatchLater ?: false
-                        val isFinished = if (remoteData != null) remoteData.finished.contains(id) else existing?.isFinished ?: false
-                        
-                        val remoteProgress = remoteData?.watching?.get(id)
-                        val isWatching = remoteProgress != null || (existing?.isWatching ?: false)
-                        val lastPos = remoteProgress?.position ?: existing?.lastPosition ?: 0L
-                        val totalDur = remoteProgress?.duration ?: existing?.totalDuration ?: 0L
-                        val timestamp = remoteProgress?.timestamp ?: existing?.timestamp ?: System.currentTimeMillis()
+                    val isLiked = if (remoteData != null) remoteData.liked.contains(id) else existing?.isLiked ?: false
+                    val isSaved = if (remoteData != null) remoteData.saved.contains(id) else existing?.isSaved ?: false
+                    val isWatchLater = if (remoteData != null) remoteData.watchLater.contains(id) else existing?.isWatchLater ?: false
+                    val isFinished = if (remoteData != null) remoteData.finished.contains(id) else existing?.isFinished ?: false
+                    
+                    val remoteProgress = remoteData?.watching?.get(id)
+                    val isWatching = remoteProgress != null || (existing?.isWatching ?: false)
+                    val lastPos = remoteProgress?.position ?: existing?.lastPosition ?: 0L
+                    val totalDur = remoteProgress?.duration ?: existing?.totalDuration ?: 0L
+                    val timestamp = remoteProgress?.timestamp ?: existing?.timestamp ?: System.currentTimeMillis()
 
-                        var title = existing?.title ?: primaryInfo.cleanTitle.capitalizeWords()
-                        var overview = existing?.overview ?: "Contenido disponible."
-                        var posterUrl = existing?.posterUrl
-                        var backdropUrl = existing?.backdropUrl
-                        var releaseDate = existing?.releaseDate ?: primaryInfo.year ?: "Desconocido"
-                        var rating = existing?.rating ?: 0.0
-                        var genres = existing?.genres ?: emptyList()
-                        var trailerUrl = existing?.trailerUrl
-                        var cast = existing?.cast ?: emptyList()
-                        var duration = existing?.duration
-                        var finalLinks = mergedLinks
-
-                        val isCompleteInCache = !posterUrl.isNullOrBlank() && overview != "Cargando metadatos..." && !finalLinks.any { it.thumbnailUri.isNullOrBlank() }
-
-                        if (!isCompleteInCache) {
-                            parallelSemaphore.withPermit {
-                                try {
-                                    val seasons = finalLinks.mapNotNull { it.season }.distinct()
-                                    val episodeThumbnails = mutableMapOf<Pair<Int, Int>, Triple<String?, String?, String?>>()
-
-                                    if ((primaryInfo.isTv || primaryInfo.isAnime) && tmdbApiKey.isNotBlank() && seasons.isNotEmpty()) {
-                                        try {
-                                            val tvId = tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "es-MX").results.firstOrNull()?.id
-                                                ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "en-US").results.firstOrNull()?.id
-                                                ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "ja-JP").results.firstOrNull()?.id
-
-                                            if (tvId != null) {
-                                                seasons.forEach { seasonNum ->
-                                                    try {
-                                                        val seasonDetail = tmdbApi.getTvSeasonDetails(tvId, seasonNum)
-                                                        seasonDetail.episodes?.forEach { ep ->
-                                                            if (ep.seasonNumber != null && ep.episodeNumber != null) {
-                                                                val thumb = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
-                                                                episodeThumbnails[ep.seasonNumber to ep.episodeNumber] = Triple(thumb, ep.name, ep.overview)
-                                                            }
-                                                        }
-                                                    } catch (_: Exception) {}
-                                                }
-                                            }
-                                        } catch (_: Exception) {}
-                                    }
-
-                                    finalLinks = finalLinks.map { link ->
-                                        val s = link.season
-                                        val e = link.episode
-                                        if (s != null && e != null) {
-                                            val thumbInfo = episodeThumbnails[s to e]
-                                            link.copy(
-                                                thumbnailUri = thumbInfo?.first ?: link.thumbnailUri,
-                                                episodeTitle = thumbInfo?.second ?: link.episodeTitle,
-                                                overview = thumbInfo?.third ?: link.overview
-                                            )
-                                        } else {
-                                            link
-                                        }
-                                    }
-
-                                    val maxSeason = finalLinks.mapNotNull { it.season }.maxOrNull()
-                                    val tmdbData = tmdbEnricher.fetchTmdbData(primaryInfo, maxSeason)
-
-                                    if (tmdbData != null) {
-                                        title = tmdbData.title
-                                        overview = tmdbData.overview
-                                        posterUrl = tmdbData.posterUrl ?: posterUrl
-                                        backdropUrl = tmdbData.backdropUrl ?: backdropUrl
-                                        rating = tmdbData.rating
-                                        genres = tmdbData.genres
-                                        trailerUrl = tmdbData.trailerUrl
-                                        cast = tmdbData.cast
-                                        duration = tmdbData.duration
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("PrimazoSync", "Error enriqueciendo ${primaryInfo.cleanTitle}: ${e.message}")
-                                }
-                            }
-                        }
-
-                        MovieEntity(
-                            id = id,
-                            title = title,
-                            overview = overview,
-                            posterUrl = posterUrl,
-                            backdropUrl = backdropUrl,
-                            releaseDate = releaseDate,
-                            rating = rating,
-                            serverLinks = finalLinks,
-                            contentType = when {
-                                primaryInfo.isAnime -> ContentType.ANIME.name
-                                primaryInfo.isTv -> ContentType.TV.name
-                                else -> ContentType.MOVIE.name
-                            },
-                            genres = genres,
-                            year = primaryInfo.year,
-                            trailerUrl = trailerUrl,
-                            cast = cast,
-                            season = primaryInfo.season,
-                            episode = primaryInfo.episode,
-                            duration = duration,
-                            isLiked = isLiked,
-                            isSaved = isSaved,
-                            isWatchLater = isWatchLater,
-                            isWatching = isWatching,
-                            isFinished = isFinished,
-                            lastPosition = lastPos,
-                            totalDuration = totalDur,
-                            timestamp = timestamp,
-                            lastUpdated = syncStartTime
-                        )
-                    }
+                    MovieEntity(
+                        id = id,
+                        title = existing?.title ?: primaryInfo.cleanTitle.capitalizeWords(),
+                        overview = existing?.overview ?: "Contenido disponible.",
+                        posterUrl = existing?.posterUrl,
+                        backdropUrl = existing?.backdropUrl,
+                        releaseDate = existing?.releaseDate ?: primaryInfo.year ?: "Desconocido",
+                        rating = existing?.rating ?: 0.0,
+                        serverLinks = mergedLinks,
+                        contentType = when {
+                            primaryInfo.isAnime -> ContentType.ANIME.name
+                            primaryInfo.isTv -> ContentType.TV.name
+                            else -> ContentType.MOVIE.name
+                        },
+                        genres = existing?.genres ?: emptyList(),
+                        year = primaryInfo.year,
+                        trailerUrl = existing?.trailerUrl,
+                        cast = existing?.cast ?: emptyList(),
+                        season = primaryInfo.season,
+                        episode = primaryInfo.episode,
+                        duration = existing?.duration,
+                        isLiked = isLiked,
+                        isSaved = isSaved,
+                        isWatchLater = isWatchLater,
+                        isWatching = isWatching,
+                        isFinished = isFinished,
+                        lastPosition = lastPos,
+                        totalDuration = totalDur,
+                        timestamp = timestamp,
+                        lastUpdated = syncStartTime
+                    )
                 }
 
-                val results = deferredMovies.awaitAll()
-                
-                if (results.isNotEmpty()) {
-                    // Inserción única y atómica para contenido activo
-                    movieDao.insertMovies(results)
+                if (initialEntities.isNotEmpty()) {
+                    movieDao.insertMovies(initialEntities)
+                    Log.d("PrimazoSync", "Inserción ultra-rápida de ${initialEntities.size} contenidos en DB (Carga inmediata)")
 
-                    // Si el servidor está ONLINE y devolvió archivos, cualquier contenido previo de Streamtape
-                    // que ya no exista en activeMovieIds significa que el admin lo eliminó del servidor.
+                    // Limpiar contenido eliminado por admin si aplica
                     val existingEntities = movieDao.getAllMoviesSync()
                     val deletedByAdminEntities = existingEntities.filter { existing ->
                         !activeMovieIds.contains(existing.id) &&
@@ -400,6 +327,48 @@ class MovieRepositoryImpl @Inject constructor(
                     if (deletedByAdminEntities.isNotEmpty()) {
                         Log.d("PrimazoSync", "Eliminando ${deletedByAdminEntities.size} contenidos eliminados por el administrador del servidor")
                         movieDao.deleteMovies(deletedByAdminEntities)
+                    }
+                }
+
+                // Paso 2: Enriquecimiento TMDB en segundo plano para obtener portadas, sinopsis y valoraciones
+                val uncompleteEntities = initialEntities.filter { entity ->
+                    entity.posterUrl.isNullOrBlank() || entity.overview == "Contenido disponible."
+                }
+
+                if (uncompleteEntities.isNotEmpty()) {
+                    val deferredEnriched = uncompleteEntities.map { entity ->
+                        async(Dispatchers.IO) {
+                            parallelSemaphore.withPermit {
+                                try {
+                                    val primaryInfo = FileNameParser.parseFileName(entity.title)
+                                    val maxSeason = entity.serverLinks.mapNotNull { it.season }.maxOrNull()
+                                    val tmdbData = tmdbEnricher.fetchTmdbData(primaryInfo, maxSeason)
+
+                                    if (tmdbData != null) {
+                                        entity.copy(
+                                            title = tmdbData.title,
+                                            overview = tmdbData.overview,
+                                            posterUrl = tmdbData.posterUrl ?: entity.posterUrl,
+                                            backdropUrl = tmdbData.backdropUrl ?: entity.backdropUrl,
+                                            rating = tmdbData.rating,
+                                            genres = tmdbData.genres,
+                                            trailerUrl = tmdbData.trailerUrl,
+                                            cast = tmdbData.cast,
+                                            duration = tmdbData.duration
+                                        )
+                                    } else entity
+                                } catch (e: Exception) {
+                                    Log.e("PrimazoSync", "Error enriqueciendo ${entity.title}: ${e.message}")
+                                    entity
+                                }
+                            }
+                        }
+                    }
+
+                    val enrichedResults = deferredEnriched.awaitAll()
+                    if (enrichedResults.isNotEmpty()) {
+                        movieDao.insertMovies(enrichedResults)
+                        Log.d("PrimazoSync", "Enriquecimiento TMDB completado para ${enrichedResults.size} contenidos")
                     }
                 }
             } catch (e: Exception) {

@@ -23,8 +23,15 @@ class AdsManager @Inject constructor() {
     val isRewardedVideoReady = _isRewardedVideoReady.asStateFlow()
 
     private var onRewardCallback: (() -> Unit)? = null
+    
+    @Volatile
+    private var isInitialized = false
 
     fun init(activity: Activity) {
+        if (isInitialized) {
+            Log.d(tag, "AdsManager ya está inicializado. Omitiendo reinicialización.")
+            return
+        }
         val appKey = BuildConfig.IRONSOURCE_APP_KEY.ifEmpty { "2852f0ccd" }
         
         val prefs = activity.getSharedPreferences("ads_prefs", Context.MODE_PRIVATE)
@@ -60,9 +67,14 @@ class AdsManager @Inject constructor() {
         })
 
         IronSource.init(activity, appKey, IronSource.AD_UNIT.REWARDED_VIDEO)
+        isInitialized = true
+        Log.d(tag, "AdsManager inicializado con éxito bajo demanda.")
     }
 
     fun showRewardedVideo(activity: Activity, placementName: String? = null, onReward: () -> Unit) {
+        if (!isInitialized) {
+            init(activity)
+        }
         this.onRewardCallback = onReward
         if (IronSource.isRewardedVideoAvailable()) {
             if (!placementName.isNullOrBlank()) {

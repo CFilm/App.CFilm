@@ -38,6 +38,15 @@ class DetailViewModel @Inject constructor(
     private val _preloadingVideo = MutableStateFlow(false)
     val preloadingVideo = _preloadingVideo.asStateFlow()
 
+    fun preloadAds(activity: Activity) {
+        try {
+            adsManager.init(activity)
+            Log.d(tag, "Precargando anuncios al entrar a la ficha de la película")
+        } catch (e: Exception) {
+            Log.e(tag, "Error al precargar anuncios: ${e.message}")
+        }
+    }
+
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 

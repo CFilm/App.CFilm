@@ -4,5 +4,6 @@ data class User(
     val username: String = "",
     val email: String = "",
     val profilePictureUri: String? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val isVip: Boolean = false
 )

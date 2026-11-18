@@ -61,6 +61,13 @@ fun DetailScreen(
     val isLoadingAuth by viewModel.isLoadingAuth.collectAsState()
     val isServerOnline by viewModel.isServerOnline.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+
+    LaunchedEffect(Unit) {
+        activity?.let { viewModel.preloadAds(it) }
+    }
+
     val handleActionWithAuth = { action: () -> Unit ->
         if (user?.isLoggedIn == true) {
             action()

@@ -1,0 +1,3 @@
+- `[x]` Configurando AndroidManifest.xml y creando banner vectorial para Android TV (`tv_banner.xml`).
+- `[x]` Verificando navegación por D-Pad / Foco en la interfaz para Android TV.
+- `[x]` Compilación y verificación del APK universal.

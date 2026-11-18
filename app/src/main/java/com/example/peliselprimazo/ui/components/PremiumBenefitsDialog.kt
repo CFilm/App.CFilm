@@ -1,5 +1,8 @@
 package com.example.peliselprimazo.ui.components
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -155,25 +161,135 @@ fun PremiumBenefitsDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Pricing Plans
+                Text(
+                    text = "Planes Disponibles (SPEI)",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val plans = listOf(
+                        Triple("1 Mes", "$24.55", "Mensual"),
+                        Triple("2 Meses", "$45.00", "Bimestre"),
+                        Triple("3 Meses", "$68.00", "Trimestre")
+                    )
+                    plans.forEach { (period, price, title) ->
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFFD700).copy(alpha = 0.1f),
+                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(text = title, color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(text = price, color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.Black)
+                                Text(text = period, color = Color.LightGray, fontSize = 9.sp)
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Call to action button
+                val context = LocalContext.current
+                val clipboardManager = LocalClipboardManager.current
+                val clabe = "638180010182480192"
+
+                // SPEI Transfer Instructions Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.05f),
+                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Pago por SPEI / Transferencia Directa",
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "CLABE (Nubank):",
+                            color = Color.Gray,
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            text = clabe,
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "⚠️ Importante: En el concepto o motivo de pago debes incluir obligatoriamente tu correo electrónico con el que te registraste en la app.",
+                            color = Color(0xFFFFCC00),
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Copy CLABE Button
                 Button(
-                    onClick = onDismiss,
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(clabe))
+                        Toast.makeText(context, "¡CLABE copiada al portapapeles!", Toast.LENGTH_SHORT).show()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFFD700),
                         contentColor = Color.Black
                     )
                 ) {
+                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "ENTENDIDO",
+                        text = "COPIAR CLABE NUBANK",
                         fontWeight = FontWeight.Black,
-                        fontSize = 15.sp,
+                        fontSize = 13.sp,
                         letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color.Gray)
+                ) {
+                    Text(
+                        text = "CERRAR",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
                     )
                 }
             }
