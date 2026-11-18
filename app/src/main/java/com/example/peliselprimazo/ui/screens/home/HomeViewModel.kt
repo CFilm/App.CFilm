@@ -16,8 +16,8 @@ import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
 import com.example.peliselprimazo.domain.usecase.GetUpdateConfigUseCase
 import com.example.peliselprimazo.domain.usecase.SyncContentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -106,12 +106,12 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val seriesListFiltered = combine(allContent, _selectedGenre) { list, genre ->
-        list.filter { it.contentType == ContentType.TV && (genre == null || it.genres.contains(genre)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        list.filter { (it.contentType == ContentType.TV || it.contentType == ContentType.ANIME) && (genre == null || it.genres.contains(genre)) }
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val homeListFiltered = combine(allContent, _selectedGenre) { list, genre ->
         list.filter { genre == null || it.genres.contains(genre) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val searchTypeFilter = MutableStateFlow<String>("ALL")
     val searchGenreFilter = MutableStateFlow<String?>(null)
@@ -160,24 +160,30 @@ class HomeViewModel @Inject constructor(
         }
 
         filtered
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val totalHours = allContent.map { list ->
         val totalMs = list.sumOf { it.totalDuration }
         totalMs / (1000 * 60 * 60)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     val homeSections = combine(allContent, watchingContent, trendingContent) { list, watching, trends ->
-        HomeSectionBuilder.createSections(list, watching, trends)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        withContext(Dispatchers.Default) {
+            HomeSectionBuilder.createSections(list, watching, trends)
+        }
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val movieSections = allContent.map { list ->
-        HomeSectionBuilder.createMovieSections(list.filter { it.contentType == ContentType.MOVIE })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        withContext(Dispatchers.Default) {
+            HomeSectionBuilder.createMovieSections(list.filter { it.contentType == ContentType.MOVIE })
+        }
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val seriesSections = allContent.map { list ->
-        HomeSectionBuilder.createSeriesSections(list.filter { it.contentType == ContentType.TV })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        withContext(Dispatchers.Default) {
+            HomeSectionBuilder.createSeriesSections(list.filter { it.contentType == ContentType.TV || it.contentType == ContentType.ANIME })
+        }
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _selectedAccentColor = MutableStateFlow<String?>(null)
     val selectedAccentColor = _selectedAccentColor.asStateFlow()
@@ -197,20 +203,8 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            try {
-                val cached = repository.getAllContent().first()
-                if (cached.isNotEmpty()) {
-                    _isLoading.value = false
-                }
-            } catch (_: Exception) {}
-        }
-
-        viewModelScope.launch {
             allContent.collect { list ->
                 Log.d("CFilmHome", "AllContent collected: ${list.size} items")
-                if (list.isNotEmpty()) {
-                    _isLoading.value = false
-                }
             }
         }
 
