@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
 }
@@ -23,8 +22,8 @@ android {
         applicationId = "com.example.peliselprimazo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 18
-        versionName = "2.4.19"
+        versionCode = 30
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -63,6 +62,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:database"))
     implementation(project(":core:network"))
+    implementation(project(":shared"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -77,16 +77,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     
-    // Hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
-    
-    // Networking
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
+    // Koin
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
     
     // Media & Images
     implementation(libs.androidx.media3.exoplayer)
@@ -100,8 +93,7 @@ dependencies {
     
     // Storage
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
+    implementation("androidx.sqlite:sqlite-bundled:2.5.0-rc01")
     ksp(libs.androidx.room.compiler)
 
     // Paging
