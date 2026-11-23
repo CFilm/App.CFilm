@@ -55,7 +55,7 @@ class DailyNotificationReceiver : BroadcastReceiver() {
     private fun showShareNotification(context: Context, manager: NotificationManager) {
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "¡Disfruta de tus peliculas y series favoritas gratis en CFilm! Descargala aqui: https://app.cfilm.site/")
+            putExtra(Intent.EXTRA_TEXT, "¡Disfruta de tus peliculas y series favoritas gratis en CFilm! Descargala aqui: https://cfilm.github.io/App.CFilm/")
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 101, Intent.createChooser(shareIntent, "Comparte CFilm"),
