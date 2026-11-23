@@ -236,8 +236,20 @@ fun NativePlayer(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    val maxVolume = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1) }
+    val audioManager = remember {
+        try {
+            context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        } catch (e: Exception) {
+            null
+        }
+    }
+    val maxVolume = remember(audioManager) {
+        try {
+            audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.coerceAtLeast(1) ?: 15
+        } catch (e: Exception) {
+            15
+        }
+    }
 
     var isPlaying by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableStateOf(0L) }
@@ -245,10 +257,22 @@ fun NativePlayer(
     var showControls by remember { mutableStateOf(true) }
     var showSupportDialog by remember { mutableStateOf(false) }
 
-    var currentVolume by remember { mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat()) }
+    var currentVolume by remember {
+        mutableFloatStateOf(
+            try {
+                audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 10f
+            } catch (e: Exception) {
+                10f
+            }
+        )
+    }
     var currentBrightness by remember {
         mutableFloatStateOf(
-            activity?.window?.attributes?.screenBrightness.takeIf { it != null && it >= 0f } ?: 0.5f
+            try {
+                activity?.window?.attributes?.screenBrightness.takeIf { it != null && it >= 0f } ?: 0.5f
+            } catch (e: Exception) {
+                0.5f
+            }
         )
     }
 
@@ -266,26 +290,31 @@ fun NativePlayer(
     }
 
     LaunchedEffect(videoUrl) {
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
-        currentPosition = 0L
-        duration = 0L
-        autoNextCanceled = false
-        autoNextTriggered = false
-        autoNextCountdown = 6
-        val dataSourceFactory = DefaultHttpDataSource.Factory().apply {
-            if (headers.isNotEmpty()) {
-                setDefaultRequestProperties(headers)
+        try {
+            exoPlayer.stop()
+            exoPlayer.clearMediaItems()
+            currentPosition = 0L
+            duration = 0L
+            autoNextCanceled = false
+            autoNextTriggered = false
+            autoNextCountdown = 6
+            val dataSourceFactory = DefaultHttpDataSource.Factory().apply {
+                if (headers.isNotEmpty()) {
+                    setDefaultRequestProperties(headers)
+                }
             }
+            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(videoUrl))
+            exoPlayer.setMediaSource(mediaSource)
+            exoPlayer.prepare()
+            if (resumePosition > 0) {
+                exoPlayer.seekTo(resumePosition)
+            }
+            exoPlayer.playWhenReady = true
+        } catch (e: Throwable) {
+            Log.e("NativePlayer", "Error preparing video playback safely: ${e.message}", e)
+            onError()
         }
-        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(videoUrl))
-        exoPlayer.setMediaSource(mediaSource)
-        exoPlayer.prepare()
-        if (resumePosition > 0) {
-            exoPlayer.seekTo(resumePosition)
-        }
-        exoPlayer.playWhenReady = true
     }
 
     LaunchedEffect(showControls, isPlaying) {
@@ -389,17 +418,25 @@ fun NativePlayer(
                         val deltaY = -dragAmount.y / size.height.toFloat()
 
                         if (isDraggingLeft) {
-                            currentBrightness = (currentBrightness + deltaY * 1.5f).coerceIn(0.01f, 1.0f)
-                            activity?.window?.let { window ->
-                                val lp = window.attributes
-                                lp.screenBrightness = currentBrightness
-                                window.attributes = lp
+                            try {
+                                currentBrightness = (currentBrightness + deltaY * 1.5f).coerceIn(0.01f, 1.0f)
+                                activity?.window?.let { window ->
+                                    val lp = window.attributes
+                                    lp.screenBrightness = currentBrightness
+                                    window.attributes = lp
+                                }
+                                showBrightnessOverlay = true
+                            } catch (e: Exception) {
+                                Log.e("PlayerScreen", "Error setting brightness: ${e.message}")
                             }
-                            showBrightnessOverlay = true
                         } else if (isDraggingRight) {
-                            currentVolume = (currentVolume + deltaY * maxVolume.toFloat() * 1.5f).coerceIn(0f, maxVolume.toFloat())
-                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume.toInt(), 0)
-                            showVolumeOverlay = true
+                            try {
+                                currentVolume = (currentVolume + deltaY * maxVolume.toFloat() * 1.5f).coerceIn(0f, maxVolume.toFloat())
+                                audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume.toInt(), 0)
+                                showVolumeOverlay = true
+                            } catch (e: Exception) {
+                                Log.e("PlayerScreen", "Error setting volume: ${e.message}")
+                            }
                         }
                     }
                 )

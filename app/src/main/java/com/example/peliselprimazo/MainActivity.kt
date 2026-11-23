@@ -42,6 +42,7 @@ import com.example.peliselprimazo.ui.screens.player.PlayerScreen
 import com.example.peliselprimazo.ui.screens.player.PlayerViewModel
 import com.example.peliselprimazo.ui.screens.splash.SplashScreen
 import com.example.peliselprimazo.ui.theme.CFilmTheme
+import com.example.peliselprimazo.ui.utils.DailyNotificationScheduler
 import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.URLEncoder
@@ -64,6 +65,12 @@ class MainActivity : FragmentActivity() {
             Log.d("CFilmMain", "AdsManager initialized successfully")
         } catch (e: Exception) {
             Log.e("CFilmMain", "Error initializing ads: ${e.message}", e)
+        }
+
+        try {
+            DailyNotificationScheduler.scheduleDailyNotifications(this)
+        } catch (e: Exception) {
+            Log.e("CFilmMain", "Error scheduling daily notifications: ${e.message}")
         }
         
         currentIntent = intent

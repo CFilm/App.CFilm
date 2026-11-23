@@ -44,8 +44,9 @@ import com.example.peliselprimazo.domain.model.ServerLink
 @Composable
 fun EpisodeSelectionSheet(
     movie: Movie,
+    sheetTitle: String = "Episodios",
     onClose: () -> Unit = {},
-    onEpisodeSelected: (String, String) -> Unit
+    onEpisodeSelected: (ServerLink) -> Unit
 ) {
     val seasons = remember(movie) {
         val detected = movie.serverLinks.mapNotNull { it.season }.distinct().sorted()
@@ -60,7 +61,7 @@ fun EpisodeSelectionSheet(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = movie.title,
+                text = "$sheetTitle: ${movie.title}",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
                 color = Color.White,
@@ -118,7 +119,7 @@ fun EpisodeSelectionSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 5.dp)
-                            .clickable { onEpisodeSelected(ep.serverName, ep.fileId) },
+                            .clickable { onEpisodeSelected(ep) },
                         color = Color(0xFF1A1A1E),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))

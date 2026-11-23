@@ -140,6 +140,19 @@ fun HomeScreen(
 
     val pagerState = rememberPagerState(initialPage = 0) { categories.size }
 
+    // Interceptar el botón Atrás del sistema para no cerrar la app al buscar o filtrar
+    BackHandler(enabled = isSearchActive || selectedGenre != null || pagerState.currentPage != 0) {
+        when {
+            isSearchActive -> viewModel.onSearchActiveChange(false)
+            selectedGenre != null -> viewModel.setSelectedGenre(null)
+            pagerState.currentPage != 0 -> {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(0)
+                }
+            }
+        }
+    }
+
     val handlePlayRequest = { movie: Movie ->
         if (user?.isLoggedIn == true) {
             onDirectPlayClick(movie)
@@ -300,42 +313,32 @@ fun HomeScreen(
             )
         }
 
-        // BARRA INFERIOR (Bottom navigation)
+        // BARRA INFERIOR (Bottom navigation - Floating Bubbles)
         if (!isSearchActive) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 20.dp)
+                    .padding(bottom = 20.dp, start = 16.dp, end = 16.dp)
                     .zIndex(10f), 
                 contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(30.dp)),
-                    color = Color(0xFF121212).copy(alpha = 0.95f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-                    tonalElevation = 8.dp
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        categories.forEachIndexed { index, pair ->
-                            CategoryBubbleItem(
-                                label = pair.second,
-                                selected = pagerState.currentPage == index,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.scrollToPage(index)
-                                    }
+                    categories.forEachIndexed { index, pair ->
+                        CategoryBubbleItem(
+                            label = pair.second,
+                            selected = pagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.scrollToPage(index)
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
             }

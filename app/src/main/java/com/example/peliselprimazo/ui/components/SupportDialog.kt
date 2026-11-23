@@ -3,9 +3,12 @@ package com.example.peliselprimazo.ui.components
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +30,7 @@ fun SupportDialog(
     val context = LocalContext.current
     var issueDescription by remember { mutableStateOf("") }
     var sentSuccess by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -36,14 +40,15 @@ fun SupportDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .wrapContentHeight()
-                .padding(vertical = 24.dp),
+                .padding(vertical = 12.dp),
             shape = RoundedCornerShape(28.dp),
             color = Color(0xFF141414),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
         ) {
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
+                    .verticalScroll(scrollState)
+                    .padding(20.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -120,26 +125,25 @@ fun SupportDialog(
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, Color.Gray)
                     ) {
-                        Text("Cerrar", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Cancelar", color = Color.White, fontWeight = FontWeight.Bold)
                     }
 
                     if (!sentSuccess) {
                         Button(
                             onClick = {
-                                if (issueDescription.isNotBlank()) {
-                                    val whatsappNumber = "525629865739"
-                                    val textMessage = "Hola soporte CFilm, quiero reportar el siguiente problema:\n\n${issueDescription.trim()}"
-                                    val url = "https://api.whatsapp.com/send?phone=$whatsappNumber&text=${Uri.encode(textMessage)}"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                val reportText = if (issueDescription.isNotBlank()) issueDescription.trim() else "Reporte de falla / problema en la reproducción"
+                                val whatsappNumber = "525629865739"
+                                val textMessage = "Hola soporte CFilm, quiero reportar el siguiente problema:\n\n$reportText"
+                                val url = "https://api.whatsapp.com/send?phone=$whatsappNumber&text=${Uri.encode(textMessage)}"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                try {
+                                    context.startActivity(intent)
+                                    sentSuccess = true
+                                } catch (_: Exception) {
                                     try {
-                                        context.startActivity(intent)
+                                        context.startActivity(Intent.createChooser(intent, "Enviar reporte vía..."))
                                         sentSuccess = true
-                                    } catch (_: Exception) {
-                                        try {
-                                            context.startActivity(Intent.createChooser(intent, "Enviar reporte vía..."))
-                                            sentSuccess = true
-                                        } catch (_: Exception) {}
-                                    }
+                                    } catch (_: Exception) {}
                                 }
                             },
                             modifier = Modifier
@@ -148,7 +152,14 @@ fun SupportDialog(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
                         ) {
-                            Text("Enviar WhatsApp", color = Color.White, fontWeight = FontWeight.Black)
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Enviar WhatsApp", color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp)
                         }
                     }
                 }

@@ -1,12 +1,17 @@
 package com.example.peliselprimazo.ui.screens.detail
 
 import android.app.Activity
+import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.domain.model.Movie
+import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.domain.repository.MovieRepository
 import com.example.peliselprimazo.domain.usecase.GetMovieDetailUseCase
 import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
@@ -37,6 +42,105 @@ class DetailViewModel @Inject constructor(
 
     private val _preloadingVideo = MutableStateFlow(false)
     val preloadingVideo = _preloadingVideo.asStateFlow()
+
+    private val _downloadAdState = MutableStateFlow<DownloadAdState?>(null)
+    val downloadAdState: StateFlow<DownloadAdState?> = _downloadAdState.asStateFlow()
+
+    fun prepareDownload(movieTitle: String, serverLink: ServerLink, isEpisode: Boolean = false) {
+        _downloadAdState.value = DownloadAdState(
+            serverLink = serverLink,
+            movieTitle = movieTitle,
+            isEpisode = isEpisode,
+            season = serverLink.season,
+            episode = serverLink.episode,
+            episodeTitle = serverLink.episodeTitle,
+            adsWatched = 0,
+            isProcessing = false,
+            statusMessage = null,
+            isCompleted = false
+        )
+    }
+
+    fun dismissDownloadDialog() {
+        _downloadAdState.value = null
+    }
+
+    fun watchNextAd(activity: Activity) {
+        val currentState = _downloadAdState.value ?: return
+        val currentStep = currentState.adsWatched
+        if (currentStep >= 2 || currentState.isProcessing) return
+
+        val nextAdNumber = currentStep + 1
+        _downloadAdState.value = currentState.copy(
+            isProcessing = true,
+            statusMessage = "Cargando anuncio $nextAdNumber de 2..."
+        )
+
+        showRewardedVideo(activity, "download_ad_$nextAdNumber") {
+            val updatedState = _downloadAdState.value ?: return@showRewardedVideo
+            val newAdsWatched = updatedState.adsWatched + 1
+            val completed = newAdsWatched >= 2
+            _downloadAdState.value = updatedState.copy(
+                adsWatched = newAdsWatched,
+                isProcessing = false,
+                isCompleted = completed,
+                statusMessage = if (completed) "¡2 de 2 anuncios completados! Presiona el botón para iniciar la descarga." else "¡Anuncio 1 completado! Presiona para ver el segundo anuncio."
+            )
+        }
+    }
+
+    fun startFileDownload(activity: Activity) {
+        val currentState = _downloadAdState.value ?: return
+        if (currentState.adsWatched < 2) return
+
+        _downloadAdState.value = currentState.copy(
+            isProcessing = true,
+            statusMessage = "Obteniendo enlace de descarga..."
+        )
+
+        viewModelScope.launch {
+            try {
+                val serverLink = currentState.serverLink
+                val downloadUrl = repository.getDownloadUrl(serverLink.serverName, serverLink.fileId)
+                if (!downloadUrl.isNullOrBlank()) {
+                    val rawName = if (currentState.isEpisode) {
+                        "${currentState.movieTitle}_S${currentState.season ?: 1}E${currentState.episode ?: 1}"
+                    } else {
+                        currentState.movieTitle
+                    }
+                    val cleanFileName = rawName.replace("[^a-zA-Z0-9_-]".toRegex(), "_") + ".mp4"
+
+                    val request = DownloadManager.Request(Uri.parse(downloadUrl))
+                        .setTitle("Descargando $rawName")
+                        .setDescription("CFilm Descargas")
+                        .setAllowedOverMetered(true)
+                        .setAllowedOverRoaming(true)
+                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        .addRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cleanFileName)
+
+                    val dm = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    dm.enqueue(request)
+
+                    _downloadAdState.value = currentState.copy(
+                        isProcessing = false,
+                        isCompleted = true,
+                        statusMessage = "¡Descarga iniciada exitosamente! Revisa las notificaciones de tu dispositivo."
+                    )
+                } else {
+                    _downloadAdState.value = currentState.copy(
+                        isProcessing = false,
+                        statusMessage = "Error: Servidor no devolvió un enlace de descarga válido."
+                    )
+                }
+            } catch (e: Exception) {
+                _downloadAdState.value = currentState.copy(
+                    isProcessing = false,
+                    statusMessage = "Error al descargar: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
@@ -196,6 +300,19 @@ class DetailViewModel @Inject constructor(
         }
     }
 }
+
+data class DownloadAdState(
+    val serverLink: ServerLink,
+    val movieTitle: String,
+    val isEpisode: Boolean = false,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val episodeTitle: String? = null,
+    val adsWatched: Int = 0,
+    val isProcessing: Boolean = false,
+    val statusMessage: String? = null,
+    val isCompleted: Boolean = false
+)
 
 sealed class DetailUiState {
     data object Loading : DetailUiState()

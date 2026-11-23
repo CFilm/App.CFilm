@@ -28,7 +28,15 @@ import com.example.peliselprimazo.ui.components.AuthDialog
 import com.example.peliselprimazo.ui.components.ParticleLoading
 import com.example.peliselprimazo.ui.screens.detail.components.*
 
+import android.app.Activity
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.OndemandVideo
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import com.example.peliselprimazo.ui.components.SupportDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +49,7 @@ fun DetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isPreloading by viewModel.preloadingVideo.collectAsState()
+    val downloadAdState by viewModel.downloadAdState.collectAsState()
     
     val isFavorito by viewModel.isFavorito.collectAsState()
     val isViendo by viewModel.isViendo.collectAsState()
@@ -51,6 +60,7 @@ fun DetailScreen(
     val user by viewModel.user.collectAsState()
     
     var showEpisodeSheet by remember { mutableStateOf(false) }
+    var showDownloadEpisodeSheet by remember { mutableStateOf(false) }
     var showNoServerDialog by remember { mutableStateOf(false) }
     var showSupportDialog by remember { mutableStateOf(false) }
     var currentTrailerUrl by remember { mutableStateOf<String?>(null) }
@@ -70,6 +80,8 @@ fun DetailScreen(
         }
     }
 
+    val context = LocalContext.current
+
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -85,8 +97,30 @@ fun DetailScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = {
+                            handleActionWithAuth {
+                                val successState = uiState as? DetailUiState.Success
+                                if (successState != null) {
+                                    if (successState.movie.serverLinks.isEmpty()) {
+                                        showNoServerDialog = true
+                                    } else if (successState.movie.contentType == ContentType.MOVIE) {
+                                        val firstLink = successState.movie.serverLinks.firstOrNull()
+                                        if (firstLink != null) {
+                                            viewModel.prepareDownload(successState.movie.title, firstLink, isEpisode = false)
+                                        }
+                                    } else {
+                                        showDownloadEpisodeSheet = true
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.padding(4.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = "Descargar", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(
                         onClick = { showSupportDialog = true },
-                        modifier = Modifier.padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        modifier = Modifier.padding(4.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
                     ) {
                         Icon(Icons.Default.SupportAgent, contentDescription = "Soporte", tint = MaterialTheme.colorScheme.primary)
                     }
@@ -153,10 +187,42 @@ fun DetailScreen(
                             ) {
                                 EpisodeSelectionSheet(
                                     movie = state.movie,
+                                    sheetTitle = "Reproducir Episodio",
                                     onClose = { showEpisodeSheet = false },
-                                    onEpisodeSelected = { server, fileId ->
+                                    onEpisodeSelected = { ep ->
                                         showEpisodeSheet = false
-                                        onPlay(server, fileId)
+                                        onPlay(ep.serverName, ep.fileId)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (showDownloadEpisodeSheet) {
+                        Dialog(
+                            onDismissRequest = { showDownloadEpisodeSheet = false },
+                            properties = DialogProperties(usePlatformDefaultWidth = false)
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.92f)
+                                    .fillMaxHeight(0.82f)
+                                    .clip(RoundedCornerShape(28.dp)),
+                                color = Color(0xFF121215),
+                                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)),
+                                shadowElevation = 16.dp
+                            ) {
+                                EpisodeSelectionSheet(
+                                    movie = state.movie,
+                                    sheetTitle = "Descargar Episodio",
+                                    onClose = { showDownloadEpisodeSheet = false },
+                                    onEpisodeSelected = { ep ->
+                                        showDownloadEpisodeSheet = false
+                                        viewModel.prepareDownload(
+                                            movieTitle = state.movie.title,
+                                            serverLink = ep,
+                                            isEpisode = true
+                                        )
                                     }
                                 )
                             }
@@ -259,6 +325,16 @@ fun DetailScreen(
                     onDismiss = { showSupportDialog = false }
                 )
             }
+
+            val downloadState = downloadAdState
+            if (downloadState != null) {
+                DownloadAdDialog(
+                    state = downloadState,
+                    onDismiss = { viewModel.dismissDownloadDialog() },
+                    onWatchAd = { viewModel.watchNextAd(context as Activity) },
+                    onStartDownload = { viewModel.startFileDownload(context as Activity) }
+                )
+            }
         }
     }
 }
@@ -306,5 +382,199 @@ fun DetailContent(
         }
         
         item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+}
+
+@Composable
+fun DownloadAdDialog(
+    state: DownloadAdState,
+    onDismiss: () -> Unit,
+    onWatchAd: () -> Unit,
+    onStartDownload: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = { if (!state.isProcessing) onDismiss() },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp)),
+            color = Color(0xFF16161A),
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
+            shadowElevation = 16.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (state.isEpisode) "Descargar Episodio" else "Descargar Película",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !state.isProcessing,
+                        modifier = Modifier.size(28.dp).background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFF222228),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = state.movieTitle,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        if (state.isEpisode) {
+                            val epText = buildString {
+                                append("Temporada ${state.season ?: 1} - Episodio ${state.episode ?: 1}")
+                                if (!state.episodeTitle.isNullOrBlank()) {
+                                    append(": ${state.episodeTitle}")
+                                }
+                            }
+                            Text(
+                                text = epText,
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "Para desbloquear la descarga debes ver 2 anuncios en video. Al completarlos, la descarga se activará.",
+                    color = Color.LightGray,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AdBadgeItem(adNumber = 1, isWatched = state.adsWatched >= 1)
+                    AdBadgeItem(adNumber = 2, isWatched = state.adsWatched >= 2)
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                if (state.statusMessage != null) {
+                    Text(
+                        text = state.statusMessage,
+                        color = if (state.statusMessage.contains("Error")) Color.Red else MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+
+                if (state.adsWatched < 2) {
+                    Button(
+                        onClick = onWatchAd,
+                        enabled = !state.isProcessing,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        if (state.isProcessing) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "Ver Anuncio ${state.adsWatched + 1} de 2",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onStartDownload,
+                        enabled = !state.isProcessing,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        if (state.isProcessing) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.FileDownload, contentDescription = null, tint = Color.White)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = if (state.isCompleted) "Descargar Nuevamente" else "Iniciar Descarga Directa",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdBadgeItem(adNumber: Int, isWatched: Boolean) {
+    Surface(
+        color = if (isWatched) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, if (isWatched) Color(0xFF4CAF50) else Color.Gray.copy(alpha = 0.4f)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isWatched) Icons.Default.CheckCircle else Icons.Default.OndemandVideo,
+                contentDescription = null,
+                tint = if (isWatched) Color(0xFF4CAF50) else Color.Gray,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "Anuncio $adNumber ${if (isWatched) "✓" else ""}",
+                color = if (isWatched) Color(0xFF4CAF50) else Color.Gray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

@@ -15,6 +15,7 @@ import com.example.peliselprimazo.domain.repository.MovieRepository
 import com.example.peliselprimazo.domain.usecase.GetStreamUrlUseCase
 import com.example.peliselprimazo.domain.usecase.GetUpdateConfigUseCase
 import com.example.peliselprimazo.domain.usecase.SyncContentUseCase
+import com.example.peliselprimazo.ui.utils.DailyNotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -168,6 +169,16 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     val homeSections = combine(allContent, watchingContent, trendingContent) { list, watching, trends ->
+        val featured = list.filter { !it.posterUrl.isNullOrBlank() }.shuffled().firstOrNull()
+        if (featured != null) {
+            try {
+                DailyNotificationScheduler.scheduleDynamicRecommendation(
+                    application, featured.id, featured.title, featured.posterUrl
+                )
+            } catch (e: Exception) {
+                Log.e("CFilmHome", "Error updating daily recommendation: ${e.message}")
+            }
+        }
         HomeSectionBuilder.createSections(list, watching, trends)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

@@ -9,7 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -114,6 +116,10 @@ fun TopSearchBar(
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -132,7 +138,8 @@ fun TopSearchBar(
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(56.dp)
+                    .focusRequester(focusRequester),
                 placeholder = { Text("¿Qué quieres ver hoy?", color = Color.Gray) },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -168,20 +175,24 @@ fun CategoryBubbleItem(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        border = if (selected) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
-        modifier = Modifier.height(38.dp)
+        shape = RoundedCornerShape(24.dp),
+        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color(0xFF141418).copy(alpha = 0.95f),
+        border = BorderStroke(
+            width = 1.5.dp,
+            color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)
+        ),
+        shadowElevation = 8.dp,
+        modifier = Modifier.height(42.dp)
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
                 text = label,
-                color = if (selected) Color.Black else Color.LightGray,
+                color = if (selected) Color.White else Color.LightGray,
                 fontSize = 12.sp,
-                fontWeight = if (selected) FontWeight.Black else FontWeight.Medium
+                fontWeight = if (selected) FontWeight.Black else FontWeight.Bold
             )
         }
     }

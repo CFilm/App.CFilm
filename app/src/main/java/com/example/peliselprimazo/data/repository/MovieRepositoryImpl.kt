@@ -477,8 +477,8 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getStreamtapeFilesSafe(): List<Triple<String, ServerLink, String>> {
-        return runBlocking { fetchStreamtapeFilesSafe() }
+    private suspend fun getStreamtapeFilesSafe(): List<Triple<String, ServerLink, String>> {
+        return fetchStreamtapeFilesSafe()
     }
 
     override fun searchMovies(query: String): Flow<List<Movie>> = movieDao.searchMovies(query).map { entities ->
@@ -511,15 +511,19 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateLiked(movieId, newValue)
         
         firebaseAuth.currentUser?.let { user ->
-            val userRef = firestore.collection("users").document(user.uid)
-            if (newValue) {
-                userRef.update("liked", FieldValue.arrayUnion(movieId)).await()
+            try {
+                val userRef = firestore.collection("users").document(user.uid)
+                val map = if (newValue) {
+                    mapOf("liked" to FieldValue.arrayUnion(movieId))
+                } else {
+                    mapOf("liked" to FieldValue.arrayRemove(movieId))
+                }
+                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
+                
                 firestore.collection("trends").document(movieId.toString())
-                    .set(mapOf("count" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
-            } else {
-                userRef.update("liked", FieldValue.arrayRemove(movieId)).await()
-                firestore.collection("trends").document(movieId.toString())
-                    .set(mapOf("count" to FieldValue.increment(-1)), com.google.firebase.firestore.SetOptions.merge())
+                    .set(mapOf("count" to FieldValue.increment(if (newValue) 1 else -1)), com.google.firebase.firestore.SetOptions.merge())
+            } catch (e: Exception) {
+                Log.w("MovieRepository", "Firestore sync error in toggleLike: ${e.message}")
             }
         }
     }
@@ -530,11 +534,16 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateWatchLater(movieId, newValue)
 
         firebaseAuth.currentUser?.let { user ->
-            val userRef = firestore.collection("users").document(user.uid)
-            if (newValue) {
-                userRef.update("watchLater", FieldValue.arrayUnion(movieId)).await()
-            } else {
-                userRef.update("watchLater", FieldValue.arrayRemove(movieId)).await()
+            try {
+                val userRef = firestore.collection("users").document(user.uid)
+                val map = if (newValue) {
+                    mapOf("watchLater" to FieldValue.arrayUnion(movieId))
+                } else {
+                    mapOf("watchLater" to FieldValue.arrayRemove(movieId))
+                }
+                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
+            } catch (e: Exception) {
+                Log.w("MovieRepository", "Firestore sync error in toggleWatchLater: ${e.message}")
             }
         }
     }
@@ -545,11 +554,16 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateSaved(movieId, newValue)
 
         firebaseAuth.currentUser?.let { user ->
-            val userRef = firestore.collection("users").document(user.uid)
-            if (newValue) {
-                userRef.update("saved", FieldValue.arrayUnion(movieId)).await()
-            } else {
-                userRef.update("saved", FieldValue.arrayRemove(movieId)).await()
+            try {
+                val userRef = firestore.collection("users").document(user.uid)
+                val map = if (newValue) {
+                    mapOf("saved" to FieldValue.arrayUnion(movieId))
+                } else {
+                    mapOf("saved" to FieldValue.arrayRemove(movieId))
+                }
+                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
+            } catch (e: Exception) {
+                Log.w("MovieRepository", "Firestore sync error in toggleSave: ${e.message}")
             }
         }
     }
@@ -560,11 +574,16 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateFinished(movieId, newValue)
 
         firebaseAuth.currentUser?.let { user ->
-            val userRef = firestore.collection("users").document(user.uid)
-            if (newValue) {
-                userRef.update("finished", FieldValue.arrayUnion(movieId)).await()
-            } else {
-                userRef.update("finished", FieldValue.arrayRemove(movieId)).await()
+            try {
+                val userRef = firestore.collection("users").document(user.uid)
+                val map = if (newValue) {
+                    mapOf("finished" to FieldValue.arrayUnion(movieId))
+                } else {
+                    mapOf("finished" to FieldValue.arrayRemove(movieId))
+                }
+                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
+            } catch (e: Exception) {
+                Log.w("MovieRepository", "Firestore sync error in toggleFinished: ${e.message}")
             }
         }
     }
@@ -574,11 +593,18 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateWatching(movieId, true, timestamp)
         
         firebaseAuth.currentUser?.let { user ->
-            val userRef = firestore.collection("users").document(user.uid)
-            userRef.update("watching.$movieId.timestamp", timestamp).await()
-            
-            firestore.collection("trends").document(movieId.toString())
-                .set(mapOf("views" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
+            try {
+                val userRef = firestore.collection("users").document(user.uid)
+                val data = mapOf(
+                    "watching.$movieId.timestamp" to timestamp
+                )
+                userRef.set(data, com.google.firebase.firestore.SetOptions.merge()).await()
+                
+                firestore.collection("trends").document(movieId.toString())
+                    .set(mapOf("views" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
+            } catch (e: Exception) {
+                Log.w("MovieRepository", "Firestore sync error in addToWatching: ${e.message}")
+            }
         }
     }
 
@@ -590,14 +616,18 @@ class MovieRepositoryImpl @Inject constructor(
         
         if (now - lastUpdate > 10000) {
             firebaseAuth.currentUser?.let { user ->
-                val userRef = firestore.collection("users").document(user.uid)
-                val data = mapOf(
-                    "watching.$movieId.position" to position,
-                    "watching.$movieId.duration" to duration,
-                    "watching.$movieId.timestamp" to now
-                )
-                userRef.update(data)
-                lastProgressUpdate[movieId] = now
+                try {
+                    val userRef = firestore.collection("users").document(user.uid)
+                    val data = mapOf(
+                        "watching.$movieId.position" to position,
+                        "watching.$movieId.duration" to duration,
+                        "watching.$movieId.timestamp" to now
+                    )
+                    userRef.set(data, com.google.firebase.firestore.SetOptions.merge()).await()
+                    lastProgressUpdate[movieId] = now
+                } catch (e: Exception) {
+                    Log.w("MovieRepository", "Firestore sync error in updatePlaybackProgress: ${e.message}")
+                }
             }
         }
 
@@ -790,8 +820,13 @@ class MovieRepositoryImpl @Inject constructor(
             .replace(Regex("[^a-z0-9]"), " ")
             .trim()
         val words = titleLower.split(Regex("\\s+")).filter { it.isNotBlank() }
-        val baseKey = words.take(2).joinToString(" ").ifBlank { titleLower }
-        val stableKey = if (isTv || isAnime) "tv|$baseKey" else "movie|$baseKey|${year ?: "unknown"}"
+        val stableKey = if (isTv || isAnime) {
+            val baseKey = words.take(3).joinToString(" ").ifBlank { titleLower }
+            "tv|$baseKey"
+        } else {
+            val baseKey = words.joinToString(" ").ifBlank { titleLower }
+            "movie|$baseKey|${year ?: "unknown"}"
+        }
         return stableKey.hashCode()
     }
 }
