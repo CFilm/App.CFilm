@@ -24,7 +24,7 @@ import java.util.Calendar
 class DailyNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val type = intent.getStringExtra("NOTIFICATION_TYPE") ?: "SHARE"
-        Log.d("DailyNotification", "Ejecutando notificacion diaria obligatoria tipo: $type")
+        Log.d("DailyNotification", "Ejecutando notificación tipo: $type")
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(context, notificationManager)
@@ -35,7 +35,7 @@ class DailyNotificationReceiver : BroadcastReceiver() {
             showRecommendationNotification(context, notificationManager, intent)
         }
 
-        // Re-programar para mantener la concurrencia diaria obligatoria
+        // Re-programar la siguiente notificación con hora aleatoria para mantener el ciclo
         DailyNotificationScheduler.scheduleDailyNotifications(context)
     }
 
@@ -43,10 +43,10 @@ class DailyNotificationReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 "daily_recommendations",
-                "Notificaciones Diarias de CFilm",
+                "Notificaciones CFilm",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificaciones obligatorias de recomendacion y compartir la app"
+                description = "Notificaciones de recomendación personalizada y compartir la app"
             }
             manager.createNotificationChannel(channel)
         }
@@ -55,7 +55,7 @@ class DailyNotificationReceiver : BroadcastReceiver() {
     private fun showShareNotification(context: Context, manager: NotificationManager) {
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "¡Disfruta de tus peliculas y series favoritas gratis en CFilm! Descargala aqui: https://cfilm.github.io/App.CFilm/")
+            putExtra(Intent.EXTRA_TEXT, "¡Disfruta de tus películas y series favoritas gratis en CFilm! Descárgala aquí: https://cfilm.github.io/App.CFilm/")
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 101, Intent.createChooser(shareIntent, "Comparte CFilm"),
@@ -65,7 +65,7 @@ class DailyNotificationReceiver : BroadcastReceiver() {
         val notification = NotificationCompat.Builder(context, "daily_recommendations")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("🍿 ¡Comparte CFilm con tus amigos!")
-            .setContentText("Disfruta del mejor contenido con tus conocidos. ¡Toca aqui para compartir la app!")
+            .setContentText("Disfruta del mejor contenido con tus conocidos. ¡Toca aquí para compartir la app!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -88,6 +88,16 @@ class DailyNotificationReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Variaciones personalizadas para que cada notificación se sienta única y adaptada al usuario
+        val personalizedTitles = listOf(
+            "🍿 Hola de nuevo, ¿listo para una función? Te recomendamos:",
+            "✨ Pensando en tus gustos, hoy te sugerimos ver:",
+            "🔥 Esta joya está imperdible hoy en CFilm:",
+            "🎬 ¿Continuamos la maratón? Échale un vistazo a:",
+            "⭐ Nuestra recomendación especial para ti:"
+        )
+        val randomTitle = personalizedTitles.random()
+
         CoroutineScope(Dispatchers.IO).launch {
             var bitmap: Bitmap? = null
             if (posterUrl.isNotBlank()) {
@@ -106,8 +116,8 @@ class DailyNotificationReceiver : BroadcastReceiver() {
 
             val builder = NotificationCompat.Builder(context, "daily_recommendations")
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("🎬 Te podria interesar hoy")
-                .setContentText("$movieTitle - ¡Disponible ahora en CFilm!")
+                .setContentTitle(randomTitle)
+                .setContentText("$movieTitle - ¡Toca para ver ahora en CFilm!")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -125,7 +135,7 @@ object DailyNotificationScheduler {
     fun scheduleDailyNotifications(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
-        // 1. Notificacion 1: Compartir App (Programada a la 1:00 PM)
+        // 1. Notificación Obligatoria: Compartir App (Diseño fijo a la 1:00 PM)
         val shareIntent = Intent(context, DailyNotificationReceiver::class.java).apply {
             putExtra("NOTIFICATION_TYPE", "SHARE")
         }
@@ -151,14 +161,17 @@ object DailyNotificationScheduler {
                 sharePending
             )
         } catch (e: Exception) {
-            Log.e("DailyNotification", "Error programando notificacion de compartir", e)
+            Log.e("DailyNotification", "Error programando notificación de compartir", e)
         }
 
-        // 2. Notificacion 2: Recomendacion con Imagen de Portada (Programada a las 8:00 PM)
+        // 2. Notificación Personalizada: Recomendación con HORA ALEATORIA entre las 2:00 PM y las 9:00 PM
+        val randomHour = (14..21).random()
+        val randomMinute = (0..59).random()
+
         val recIntent = Intent(context, DailyNotificationReceiver::class.java).apply {
             putExtra("NOTIFICATION_TYPE", "RECOMMENDATION")
             putExtra("MOVIE_ID", 1)
-            putExtra("MOVIE_TITLE", "Pelicula o Serie de la Semana")
+            putExtra("MOVIE_TITLE", "Película o Serie Destacada")
         }
         val recPending = PendingIntent.getBroadcast(
             context, 1002, recIntent,
@@ -166,8 +179,8 @@ object DailyNotificationScheduler {
         )
 
         val calRec = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 20)
-            set(Calendar.MINUTE, 0)
+            set(Calendar.HOUR_OF_DAY, randomHour)
+            set(Calendar.MINUTE, randomMinute)
             set(Calendar.SECOND, 0)
             if (before(Calendar.getInstance())) {
                 add(Calendar.DAY_OF_MONTH, 1)
@@ -175,19 +188,21 @@ object DailyNotificationScheduler {
         }
 
         try {
-            alarmManager.setInexactRepeating(
+            alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 calRec.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
                 recPending
             )
         } catch (e: Exception) {
-            Log.e("DailyNotification", "Error programando notificacion de recomendacion", e)
+            Log.e("DailyNotification", "Error programando recomendación aleatoria", e)
         }
     }
 
     fun scheduleDynamicRecommendation(context: Context, movieId: Int, title: String, posterUrl: String?) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+
+        val randomHour = (14..21).random()
+        val randomMinute = (0..59).random()
 
         val recIntent = Intent(context, DailyNotificationReceiver::class.java).apply {
             putExtra("NOTIFICATION_TYPE", "RECOMMENDATION")
@@ -201,8 +216,8 @@ object DailyNotificationScheduler {
         )
 
         val calRec = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 20)
-            set(Calendar.MINUTE, 0)
+            set(Calendar.HOUR_OF_DAY, randomHour)
+            set(Calendar.MINUTE, randomMinute)
             set(Calendar.SECOND, 0)
             if (before(Calendar.getInstance())) {
                 add(Calendar.DAY_OF_MONTH, 1)
@@ -210,14 +225,13 @@ object DailyNotificationScheduler {
         }
 
         try {
-            alarmManager.setInexactRepeating(
+            alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 calRec.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
                 recPending
             )
         } catch (e: Exception) {
-            Log.e("DailyNotification", "Error actualizando recomendacion dinamica", e)
+            Log.e("DailyNotification", "Error actualizando recomendación dinámica", e)
         }
     }
 }

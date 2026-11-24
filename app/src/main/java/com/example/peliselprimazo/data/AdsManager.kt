@@ -2,8 +2,10 @@ package com.example.peliselprimazo.data
 
 import android.app.Activity
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import com.example.peliselprimazo.BuildConfig
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.LevelPlayRewardedVideoListener
@@ -60,6 +62,37 @@ class AdsManager @Inject constructor() {
         })
 
         IronSource.init(activity, appKey, IronSource.AD_UNIT.REWARDED_VIDEO)
+
+        // Configurar propiedad de usuario (Mobile vs Android TV) para Firebase Analytics
+        try {
+            val firebaseAnalytics = FirebaseAnalytics.getInstance(activity)
+            val uiModeManager = activity.getSystemService(Context.UI_MODE_SERVICE) as? android.app.UiModeManager
+            val isTv = uiModeManager?.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+            val deviceType = if (isTv) "android_tv" else "mobile"
+            firebaseAnalytics.setUserProperty("device_type", deviceType)
+
+            // Registrar Listener de Ingresos por Impresión (LevelPlay / IronSource)
+            IronSource.addImpressionDataListener(object : com.ironsource.mediationsdk.impressionData.ImpressionDataListener {
+                override fun onImpressionSuccess(impressionData: com.ironsource.mediationsdk.impressionData.ImpressionData?) {
+                    val revenue = impressionData?.revenue ?: return
+                    if (revenue <= 0.0) return
+
+                    val params = Bundle().apply {
+                        putString(FirebaseAnalytics.Param.AD_PLATFORM, "LevelPlay")
+                        putString(FirebaseAnalytics.Param.AD_SOURCE, impressionData.adNetwork ?: "unknown")
+                        putString(FirebaseAnalytics.Param.AD_FORMAT, impressionData.adFormat ?: "unknown")
+                        putString(FirebaseAnalytics.Param.AD_UNIT_NAME, impressionData.instanceName ?: "default")
+                        putString(FirebaseAnalytics.Param.CURRENCY, "USD")
+                        putDouble(FirebaseAnalytics.Param.VALUE, revenue)
+                    }
+
+                    firebaseAnalytics.logEvent(FirebaseAnalytics.Event.AD_IMPRESSION, params)
+                    Log.d(tag, "Ad Impression recorded: source=${impressionData.adNetwork}, revenue=$revenue")
+                }
+            })
+        } catch (e: Exception) {
+            Log.e(tag, "Error setting up LevelPlay impression listener: ${e.message}", e)
+        }
     }
 
     fun showRewardedVideo(activity: Activity, placementName: String? = null, onReward: () -> Unit) {

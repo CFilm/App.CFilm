@@ -220,7 +220,7 @@ class DetailViewModel @Inject constructor(
         viewModelScope.launch {
             _preloadingVideo.value = true
             try {
-                val videoUrl = getStreamUrlUseCase(server, fileId)
+                val videoUrl = getStreamUrlUseCase(server, fileId).url
                 if (!videoUrl.isNullOrBlank()) {
                     Log.d(tag, "Video extraído correctamente. Pasando al reproductor.")
                     onReady(videoUrl, null)

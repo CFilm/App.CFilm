@@ -73,6 +73,8 @@ class MovieRepositoryImpl @Inject constructor(
     override val isServerOnline: Flow<Boolean> = _isServerOnline.asStateFlow()
 
     private val lastProgressUpdate = mutableMapOf<Int, Long>()
+    private val countedTrendsSession = mutableSetOf<Int>()
+    private val reportedFiles = mutableSetOf<String>()
 
     init {
         firebaseAuth.addAuthStateListener { auth ->
@@ -211,8 +213,9 @@ class MovieRepositoryImpl @Inject constructor(
                     _isServerOnline.value = list.isNotEmpty()
                     list
                 } catch (e: Exception) {
-                    Log.e("PrimazoSync", "Streamtape server offline: ${e.message}")
-                    _isServerOnline.value = false
+                    Log.e("PrimazoSync", "Streamtape server warning/offline: ${e.message}")
+                    val hasLocalMovies = movieDao.getAllMoviesSync().isNotEmpty()
+                    _isServerOnline.value = hasLocalMovies || _isServerOnline.value
                     emptyList()
                 }
 
@@ -297,16 +300,31 @@ class MovieRepositoryImpl @Inject constructor(
                                             val tvId = tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "es-MX").results.firstOrNull()?.id
                                                 ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "en-US").results.firstOrNull()?.id
                                                 ?: tmdbApi.searchTv(primaryInfo.cleanTitle, primaryInfo.year, "ja-JP").results.firstOrNull()?.id
+                                                ?: tmdbApi.searchTv(primaryInfo.cleanTitle, null, "es-MX").results.firstOrNull()?.id
+                                                ?: tmdbApi.searchTv(primaryInfo.cleanTitle, null, "en-US").results.firstOrNull()?.id
 
                                             if (tvId != null) {
                                                 seasons.forEach { seasonNum ->
                                                     try {
-                                                        val seasonDetail = tmdbApi.getTvSeasonDetails(tvId, seasonNum)
-                                                        seasonDetail.episodes?.forEach { ep ->
-                                                            if (ep.seasonNumber != null && ep.episodeNumber != null) {
-                                                                val thumb = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
-                                                                episodeThumbnails[ep.seasonNumber to ep.episodeNumber] = Triple(thumb, ep.name, ep.overview)
-                                                            }
+                                                        val seasonDetailEs = try { tmdbApi.getTvSeasonDetails(tvId, seasonNum, "es-MX") } catch (_: Exception) { null }
+                                                        val seasonDetailEn = try { tmdbApi.getTvSeasonDetails(tvId, seasonNum, "en-US") } catch (_: Exception) { null }
+
+                                                        val episodesEs = seasonDetailEs?.episodes ?: emptyList()
+                                                        val episodesEn = seasonDetailEn?.episodes ?: emptyList()
+                                                        val epEnMap = episodesEn.associateBy { it.episodeNumber }
+
+                                                        val allEpNumbers = (episodesEs.mapNotNull { it.episodeNumber } + episodesEn.mapNotNull { it.episodeNumber }).distinct()
+
+                                                        allEpNumbers.forEach { epNum ->
+                                                            val epEs = episodesEs.find { it.episodeNumber == epNum }
+                                                            val epEn = epEnMap[epNum]
+
+                                                            val stillPath = epEs?.stillPath ?: epEn?.stillPath
+                                                            val thumb = stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
+                                                            val epName = epEs?.name?.takeIf { it.isNotBlank() } ?: epEn?.name?.takeIf { it.isNotBlank() }
+                                                            val epOverview = epEs?.overview?.takeIf { it.isNotBlank() } ?: epEn?.overview?.takeIf { it.isNotBlank() }
+
+                                                            episodeThumbnails[seasonNum to epNum] = Triple(thumb, epName, epOverview)
                                                         }
                                                     } catch (_: Exception) {}
                                                 }
@@ -315,18 +333,18 @@ class MovieRepositoryImpl @Inject constructor(
                                     }
 
                                     finalLinks = finalLinks.map { link ->
-                                        val s = link.season
-                                        val e = link.episode
-                                        if (s != null && e != null) {
-                                            val thumbInfo = episodeThumbnails[s to e]
-                                            link.copy(
-                                                thumbnailUri = thumbInfo?.first ?: link.thumbnailUri,
-                                                episodeTitle = thumbInfo?.second ?: link.episodeTitle,
-                                                overview = thumbInfo?.third ?: link.overview
-                                            )
-                                        } else {
-                                            link
-                                        }
+                                        val s = link.season ?: 1
+                                        val e = link.episode ?: 1
+                                        val thumbInfo = episodeThumbnails[s to e]
+                                        val epThumb = thumbInfo?.first ?: link.thumbnailUri?.ifBlank { null }
+                                        val epTitle = thumbInfo?.second ?: link.episodeTitle
+                                        val epOverview = thumbInfo?.third ?: link.overview?.ifBlank { null }
+
+                                        link.copy(
+                                            thumbnailUri = epThumb,
+                                            episodeTitle = epTitle,
+                                            overview = epOverview
+                                        )
                                     }
 
                                     val maxSeason = finalLinks.mapNotNull { it.season }.maxOrNull()
@@ -600,8 +618,10 @@ class MovieRepositoryImpl @Inject constructor(
                 )
                 userRef.set(data, com.google.firebase.firestore.SetOptions.merge()).await()
                 
-                firestore.collection("trends").document(movieId.toString())
-                    .set(mapOf("views" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
+                if (countedTrendsSession.add(movieId)) {
+                    firestore.collection("trends").document(movieId.toString())
+                        .set(mapOf("views" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
+                }
             } catch (e: Exception) {
                 Log.w("MovieRepository", "Firestore sync error in addToWatching: ${e.message}")
             }
@@ -672,14 +692,21 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun reportBrokenLink(movieId: Int, serverName: String, fileId: String) {
-        val report = mapOf(
-            "movieId" to movieId,
-            "server" to serverName,
-            "fileId" to fileId,
-            "timestamp" to System.currentTimeMillis(),
-            "userId" to (firebaseAuth.currentUser?.uid ?: "anonymous")
-        )
-        firestore.collection("reports").add(report).await()
+        if (!reportedFiles.add(fileId)) return
+
+        try {
+            val uid = firebaseAuth.currentUser?.uid ?: return
+            val report = mapOf(
+                "movieId" to movieId,
+                "server" to serverName,
+                "fileId" to fileId,
+                "timestamp" to System.currentTimeMillis(),
+                "userId" to uid
+            )
+            firestore.collection("reports").add(report).await()
+        } catch (e: Exception) {
+            Log.w("MovieRepository", "Firestore sync error in reportBrokenLink: ${e.message}")
+        }
     }
 
     override fun getUser(): Flow<User?> = combine(_currentUser.asStateFlow(), _avatarOverride.asStateFlow()) { user, override ->

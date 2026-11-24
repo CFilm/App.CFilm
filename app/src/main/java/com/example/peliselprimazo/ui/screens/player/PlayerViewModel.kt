@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
+import com.example.peliselprimazo.data.util.AnalyticsHelper
+import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.domain.repository.MovieRepository
@@ -46,6 +48,7 @@ class PlayerViewModel @Inject constructor(
     private val updatePlaybackProgressUseCase: UpdatePlaybackProgressUseCase,
     private val adsManager: AdsManager,
     private val getUpdateConfigUseCase: GetUpdateConfigUseCase,
+    private val analyticsHelper: AnalyticsHelper,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -96,8 +99,9 @@ class PlayerViewModel @Inject constructor(
                 }
 
                 val validPreloaded = if (!preloadedUrl.isNullOrBlank() && preloadedUrl != "null") preloadedUrl else null
-                val videoUrlToLoad = validPreloaded ?: getStreamUrlUseCase(serverName, fileId)
-                val headers = emptyMap<String, String>()
+                val streamResult = getStreamUrlUseCase(serverName, fileId)
+                val videoUrlToLoad = validPreloaded ?: streamResult.url
+                val headers = if (validPreloaded != null) emptyMap<String, String>() else streamResult.headers
                 Log.d(tag, "Loading video: server=$serverName, fileId=$fileId, preloadedUrl=$preloadedUrl, videoUrlToLoad=$videoUrlToLoad")
 
                 if (!videoUrlToLoad.isNullOrBlank()) {
@@ -124,6 +128,7 @@ class PlayerViewModel @Inject constructor(
                     )
                     
                     repository.addToWatching(movie.id)
+                    analyticsHelper.logVideoPlayed(movie.id, movie.title, movie.contentType.name, serverName)
                 } else {
                     _uiState.value = PlayerUiState.Error("No se pudo obtener el enlace de reproducción")
                 }

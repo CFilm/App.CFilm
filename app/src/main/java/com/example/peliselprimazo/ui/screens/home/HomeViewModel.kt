@@ -344,9 +344,16 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = HomeUiState.Success(allContent.value.size)
             } catch (e: Exception) {
                 Log.e("CFilmHome", "refreshData exception (offline/error): ${e.message}", e)
-                _error.value = "Sin servidor disponible - Mostrando contenido guardado"
-                _isServerOnline.value = false
-                _uiState.value = HomeUiState.Error("Sin servidor disponible - Mostrando contenido guardado")
+                val hasLocalMovies = allContent.value.isNotEmpty()
+                if (hasLocalMovies) {
+                    _error.value = null
+                    _isServerOnline.value = true
+                    _uiState.value = HomeUiState.Success(allContent.value.size)
+                } else {
+                    _error.value = "Sin servidor disponible - Mostrando contenido guardado"
+                    _isServerOnline.value = false
+                    _uiState.value = HomeUiState.Error("Sin servidor disponible - Mostrando contenido guardado")
+                }
             } finally {
                 _isLoading.value = false
                 _isRefreshing.value = false
@@ -369,7 +376,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isPreloading.value = true
             try {
-                val videoUrl = getStreamUrlUseCase(firstLink.serverName, firstLink.fileId)
+                val videoUrl = getStreamUrlUseCase(firstLink.serverName, firstLink.fileId).url
                 if (!videoUrl.isNullOrBlank()) {
                     onReady(videoUrl)
                 } else {

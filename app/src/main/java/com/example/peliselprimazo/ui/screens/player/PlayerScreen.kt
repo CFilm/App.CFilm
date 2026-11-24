@@ -394,54 +394,65 @@ fun NativePlayer(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        val isLeft = offset.x < size.width / 2f
-                        isDraggingLeft = isLeft
-                        isDraggingRight = !isLeft
-                    },
-                    onDragEnd = {
-                        isDraggingLeft = false
-                        isDraggingRight = false
-                    },
-                    onDragCancel = {
-                        isDraggingLeft = false
-                        isDraggingRight = false
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        val deltaY = -dragAmount.y / size.height.toFloat()
+    val isTv = remember(context) {
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK) ||
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TELEVISION)
+    }
 
-                        if (isDraggingLeft) {
-                            try {
-                                currentBrightness = (currentBrightness + deltaY * 1.5f).coerceIn(0.01f, 1.0f)
-                                activity?.window?.let { window ->
-                                    val lp = window.attributes
-                                    lp.screenBrightness = currentBrightness
-                                    window.attributes = lp
-                                }
-                                showBrightnessOverlay = true
-                            } catch (e: Exception) {
-                                Log.e("PlayerScreen", "Error setting brightness: ${e.message}")
+    val baseModifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)
+
+    val interactiveModifier = if (!isTv) {
+        baseModifier.pointerInput(Unit) {
+            detectDragGestures(
+                onDragStart = { offset ->
+                    val isLeft = offset.x < size.width / 2f
+                    isDraggingLeft = isLeft
+                    isDraggingRight = !isLeft
+                },
+                onDragEnd = {
+                    isDraggingLeft = false
+                    isDraggingRight = false
+                },
+                onDragCancel = {
+                    isDraggingLeft = false
+                    isDraggingRight = false
+                },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    val deltaY = -dragAmount.y / size.height.toFloat()
+
+                    if (isDraggingLeft) {
+                        try {
+                            currentBrightness = (currentBrightness + deltaY * 1.5f).coerceIn(0.01f, 1.0f)
+                            activity?.window?.let { window ->
+                                val lp = window.attributes
+                                lp.screenBrightness = currentBrightness
+                                window.attributes = lp
                             }
-                        } else if (isDraggingRight) {
-                            try {
-                                currentVolume = (currentVolume + deltaY * maxVolume.toFloat() * 1.5f).coerceIn(0f, maxVolume.toFloat())
-                                audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume.toInt(), 0)
-                                showVolumeOverlay = true
-                            } catch (e: Exception) {
-                                Log.e("PlayerScreen", "Error setting volume: ${e.message}")
-                            }
+                            showBrightnessOverlay = true
+                        } catch (e: Exception) {
+                            Log.e("PlayerScreen", "Error setting brightness: ${e.message}")
+                        }
+                    } else if (isDraggingRight) {
+                        try {
+                            currentVolume = (currentVolume + deltaY * maxVolume.toFloat() * 1.5f).coerceIn(0f, maxVolume.toFloat())
+                            audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume.toInt(), 0)
+                            showVolumeOverlay = true
+                        } catch (e: Exception) {
+                            Log.e("PlayerScreen", "Error setting volume: ${e.message}")
                         }
                     }
-                )
-            }
-            .clickable { showControls = !showControls }
+                }
+            )
+        }
+    } else {
+        baseModifier
+    }
+
+    Box(
+        modifier = interactiveModifier.clickable { showControls = !showControls }
     ) {
         AndroidView(
             factory = { ctx ->
