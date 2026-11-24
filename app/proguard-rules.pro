@@ -9,5 +9,9 @@
 
 # Add any project specific keep rules here:
 
-# Firebase specific rules (if needed)
+# Firebase specific rules
 -keep class com.google.firebase.** { *; }
+
+# Line numbers preservation for Firebase Crashlytics stack traces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
