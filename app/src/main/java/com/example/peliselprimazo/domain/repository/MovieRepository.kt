@@ -52,6 +52,8 @@ interface MovieRepository {
 
     // Auth & Profile
     fun getUser(): Flow<User?>
+    fun isGuestMode(): Boolean
+    suspend fun loginAnonymously(): Boolean
     suspend fun register(username: String, email: String, password: String)
     suspend fun login(email: String, password: String): Boolean
     suspend fun sendPasswordResetEmail(email: String): Pair<Boolean, String>

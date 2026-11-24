@@ -365,6 +365,9 @@ fun NativePlayer(
             }
             override fun onIsPlayingChanged(isPlayingChanged: Boolean) {
                 isPlaying = isPlayingChanged
+                if (!isPlayingChanged) {
+                    onProgress(exoPlayer.currentPosition, exoPlayer.duration.coerceAtLeast(0L))
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
@@ -390,6 +393,9 @@ fun NativePlayer(
         onDispose {
             handler.removeCallbacks(updateRunnable)
             exoPlayer.removeListener(listener)
+            try {
+                onProgress(exoPlayer.currentPosition, exoPlayer.duration.coerceAtLeast(0L))
+            } catch (_: Exception) {}
             exoPlayer.release()
         }
     }

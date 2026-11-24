@@ -181,6 +181,27 @@ fun AuthScreen(
 
             Button(
                 onClick = {
+                    viewModel.continueAsGuest(onAuthSuccess)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE50914),
+                    contentColor = Color.White
+                ),
+                enabled = !isLoadingAuth
+            ) {
+                Text(
+                    text = "CONTINUAR COMO INVITADO",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+
+            Button(
+                onClick = {
                     if (isLogin) {
                         viewModel.login(email, password, onAuthSuccess)
                     } else {

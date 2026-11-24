@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
 import com.example.peliselprimazo.data.UpdateManager
+import com.example.peliselprimazo.data.util.AnalyticsHelper
 import com.example.peliselprimazo.data.util.NetworkMonitor
 import com.example.peliselprimazo.domain.model.ContentType
 import com.example.peliselprimazo.domain.model.Movie
@@ -30,7 +31,8 @@ class HomeViewModel @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val adsManager: AdsManager,
     private val getUpdateConfigUseCase: GetUpdateConfigUseCase,
-    private val updateManager: UpdateManager
+    private val updateManager: UpdateManager,
+    private val analyticsHelper: AnalyticsHelper
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
@@ -410,6 +412,28 @@ class HomeViewModel @Inject constructor(
     fun clearAuthStatus() {
         _isLoadingAuth.value = false
         _error.value = null
+    }
+
+    fun isGuestMode(): Boolean = repository.isGuestMode()
+
+    fun continueAsGuest(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoadingAuth.value = true
+            try {
+                if (repository.loginAnonymously()) {
+                    analyticsHelper.logGuestModeEntered()
+                    _isLoadingAuth.value = false
+                    onSuccess()
+                } else {
+                    _error.value = "Error al ingresar como invitado"
+                    _isLoadingAuth.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error al ingresar como invitado"
+                _isLoadingAuth.value = false
+            }
+        }
     }
 
     fun register(u: String, e: String, p: String, onSuccess: () -> Unit) {

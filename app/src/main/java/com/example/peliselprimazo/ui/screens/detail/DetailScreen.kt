@@ -72,7 +72,7 @@ fun DetailScreen(
     val isServerOnline by viewModel.isServerOnline.collectAsState()
 
     val handleActionWithAuth = { action: () -> Unit ->
-        if (user?.isLoggedIn == true) {
+        if (user?.isLoggedIn == true || viewModel.isGuestMode()) {
             action()
         } else {
             pendingAction = action
@@ -308,6 +308,13 @@ fun DetailScreen(
                     },
                     onRegister = { u, e, p ->
                         viewModel.register(u, e, p) {
+                            showAuthDialog = false
+                            pendingAction?.invoke()
+                            pendingAction = null
+                        }
+                    },
+                    onGuestLogin = {
+                        viewModel.continueAsGuest {
                             showAuthDialog = false
                             pendingAction?.invoke()
                             pendingAction = null

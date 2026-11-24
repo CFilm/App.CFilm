@@ -37,4 +37,12 @@ class AnalyticsHelper @Inject constructor(
             // Non-blocking
         }
     }
+
+    fun logGuestModeEntered() {
+        try {
+            firebaseAnalytics.logEvent("guest_mode_entered", null)
+        } catch (e: Exception) {
+            // Non-blocking
+        }
+    }
 }

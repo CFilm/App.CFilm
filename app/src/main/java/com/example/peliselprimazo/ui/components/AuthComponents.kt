@@ -16,6 +16,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -29,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 
 @Composable
 fun AuthDialog(
@@ -36,6 +40,7 @@ fun AuthDialog(
     error: String?,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
+    onGuestLogin: () -> Unit,
     onResetPassword: ((String, (Boolean, String) -> Unit) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
@@ -48,6 +53,16 @@ fun AuthDialog(
     var resetFeedback by remember { mutableStateOf<String?>(null) }
     
     val focusManager = LocalFocusManager.current
+    val guestFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(150)
+        try {
+            guestFocusRequester.requestFocus()
+        } catch (_: Exception) {
+            // Ignore focus exception if not available
+        }
+    }
 
     val actionTrigger = {
         focusManager.clearFocus()
@@ -117,6 +132,50 @@ fun AuthDialog(
                 )
 
                 Spacer(Modifier.height(32.dp))
+
+                // Botón destacado "Continuar como invitado" (#E50914) con foco automático por defecto para Android TV / TV Box
+                var isGuestButtonFocused by remember { mutableStateOf(false) }
+
+                Button(
+                    onClick = onGuestLogin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .focusRequester(guestFocusRequester)
+                        .onFocusChanged { isGuestButtonFocused = it.isFocused },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE50914),
+                        contentColor = Color.White
+                    ),
+                    border = if (isGuestButtonFocused) BorderStroke(3.dp, Color.White) else null,
+                    enabled = !isLoading
+                ) {
+                    Text(
+                        text = "CONTINUAR COMO INVITADO",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                    Text(
+                        text = " o accede con tu cuenta ",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                }
+
+                Spacer(Modifier.height(20.dp))
 
                 if (isRegisterMode) {
                     AuthTextField(
@@ -211,13 +270,13 @@ fun AuthDialog(
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(24.dp))
 
                 Button(
                     onClick = actionTrigger,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -236,7 +295,7 @@ fun AuthDialog(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.clickable { 

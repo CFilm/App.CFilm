@@ -1,5 +1,6 @@
 package com.example.peliselprimazo.data.repository
 
+import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.paging.Pager
@@ -7,6 +8,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.example.peliselprimazo.BuildConfig
+import com.example.peliselprimazo.data.local.LocalUserStorage
 import com.example.peliselprimazo.data.local.dao.MovieDao
 import com.example.peliselprimazo.data.local.dao.SearchHistoryDao
 import com.example.peliselprimazo.data.local.entities.MovieEntity
@@ -27,6 +29,7 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Semaphore
@@ -51,6 +54,8 @@ data class RemoteWatchingProgress(
 
 @Singleton
 class MovieRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val localUserStorage: LocalUserStorage,
     private val streamtapeApi: StreamtapeApi,
     private val tmdbApi: TmdbApi,
     private val tmdbEnricher: TmdbEnricher,
@@ -81,13 +86,14 @@ class MovieRepositoryImpl @Inject constructor(
             val firebaseUser = auth.currentUser
             if (firebaseUser != null) {
                 _currentUser.value = User(
-                    username = firebaseUser.displayName ?: "Usuario",
+                    username = firebaseUser.displayName ?: if (firebaseUser.isAnonymous) "Invitado" else "Usuario",
                     email = firebaseUser.email ?: "",
                     profilePictureUri = firebaseUser.photoUrl?.toString(),
                     isLoggedIn = true
                 )
             } else {
-                _currentUser.value = null
+                val isGuest = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).getBoolean("is_guest_mode", false)
+                _currentUser.value = if (isGuest) User(username = "Invitado", isLoggedIn = true) else null
             }
         }
     }
@@ -468,31 +474,7 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     private suspend fun fetchRemoteUserData(): RemoteUserData? {
-        val firebaseUser = firebaseAuth.currentUser ?: return null
-        return try {
-            val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
-            if (doc.exists()) {
-                val liked = (doc.get("liked") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
-                val saved = (doc.get("saved") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
-                val watchLater = (doc.get("watchLater") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
-                val finished = (doc.get("finished") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
-                
-                val watchingMap = doc.get("watching") as? Map<String, Map<String, Any>> ?: emptyMap()
-                val watching = watchingMap.mapNotNull { (idStr, data) ->
-                    val id = idStr.toIntOrNull() ?: return@mapNotNull null
-                    id to RemoteWatchingProgress(
-                        position = (data["position"] as? Long) ?: 0L,
-                        duration = (data["duration"] as? Long) ?: 0L,
-                        timestamp = (data["timestamp"] as? Long) ?: System.currentTimeMillis()
-                    )
-                }.toMap()
-
-                RemoteUserData(liked, saved, watchLater, finished, watching)
-            } else null
-        } catch (e: Exception) {
-            Log.e("FirebaseUserData", "Error fetching remote user data: ${e.message}")
-            null
-        }
+        return null
     }
 
     private suspend fun getStreamtapeFilesSafe(): List<Triple<String, ServerLink, String>> {
@@ -527,105 +509,30 @@ class MovieRepositoryImpl @Inject constructor(
         val m = movieDao.getMovieById(movieId) ?: return
         val newValue = !m.isLiked
         movieDao.updateLiked(movieId, newValue)
-        
-        firebaseAuth.currentUser?.let { user ->
-            try {
-                val userRef = firestore.collection("users").document(user.uid)
-                val map = if (newValue) {
-                    mapOf("liked" to FieldValue.arrayUnion(movieId))
-                } else {
-                    mapOf("liked" to FieldValue.arrayRemove(movieId))
-                }
-                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
-                
-                firestore.collection("trends").document(movieId.toString())
-                    .set(mapOf("count" to FieldValue.increment(if (newValue) 1 else -1)), com.google.firebase.firestore.SetOptions.merge())
-            } catch (e: Exception) {
-                Log.w("MovieRepository", "Firestore sync error in toggleLike: ${e.message}")
-            }
-        }
+        localUserStorage.toggleFavorite(movieId)
     }
 
     override suspend fun toggleWatchLater(movieId: Int) {
         val m = movieDao.getMovieById(movieId) ?: return
         val newValue = !m.isWatchLater
         movieDao.updateWatchLater(movieId, newValue)
-
-        firebaseAuth.currentUser?.let { user ->
-            try {
-                val userRef = firestore.collection("users").document(user.uid)
-                val map = if (newValue) {
-                    mapOf("watchLater" to FieldValue.arrayUnion(movieId))
-                } else {
-                    mapOf("watchLater" to FieldValue.arrayRemove(movieId))
-                }
-                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
-            } catch (e: Exception) {
-                Log.w("MovieRepository", "Firestore sync error in toggleWatchLater: ${e.message}")
-            }
-        }
     }
 
     override suspend fun toggleSave(movieId: Int) {
         val m = movieDao.getMovieById(movieId) ?: return
         val newValue = !m.isSaved
         movieDao.updateSaved(movieId, newValue)
-
-        firebaseAuth.currentUser?.let { user ->
-            try {
-                val userRef = firestore.collection("users").document(user.uid)
-                val map = if (newValue) {
-                    mapOf("saved" to FieldValue.arrayUnion(movieId))
-                } else {
-                    mapOf("saved" to FieldValue.arrayRemove(movieId))
-                }
-                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
-            } catch (e: Exception) {
-                Log.w("MovieRepository", "Firestore sync error in toggleSave: ${e.message}")
-            }
-        }
     }
 
     override suspend fun toggleFinished(movieId: Int) {
         val m = movieDao.getMovieById(movieId) ?: return
         val newValue = !m.isFinished
         movieDao.updateFinished(movieId, newValue)
-
-        firebaseAuth.currentUser?.let { user ->
-            try {
-                val userRef = firestore.collection("users").document(user.uid)
-                val map = if (newValue) {
-                    mapOf("finished" to FieldValue.arrayUnion(movieId))
-                } else {
-                    mapOf("finished" to FieldValue.arrayRemove(movieId))
-                }
-                userRef.set(map, com.google.firebase.firestore.SetOptions.merge()).await()
-            } catch (e: Exception) {
-                Log.w("MovieRepository", "Firestore sync error in toggleFinished: ${e.message}")
-            }
-        }
     }
 
     override suspend fun addToWatching(movieId: Int) {
         val timestamp = System.currentTimeMillis()
         movieDao.updateWatching(movieId, true, timestamp)
-        
-        firebaseAuth.currentUser?.let { user ->
-            try {
-                val userRef = firestore.collection("users").document(user.uid)
-                val data = mapOf(
-                    "watching.$movieId.timestamp" to timestamp
-                )
-                userRef.set(data, com.google.firebase.firestore.SetOptions.merge()).await()
-                
-                if (countedTrendsSession.add(movieId)) {
-                    firestore.collection("trends").document(movieId.toString())
-                        .set(mapOf("views" to FieldValue.increment(1)), com.google.firebase.firestore.SetOptions.merge())
-                }
-            } catch (e: Exception) {
-                Log.w("MovieRepository", "Firestore sync error in addToWatching: ${e.message}")
-            }
-        }
     }
 
     override suspend fun updatePlaybackProgress(movieId: Int, position: Long, duration: Long) {
@@ -634,21 +541,10 @@ class MovieRepositoryImpl @Inject constructor(
         val now = System.currentTimeMillis()
         val lastUpdate = lastProgressUpdate[movieId] ?: 0L
         
-        if (now - lastUpdate > 10000) {
-            firebaseAuth.currentUser?.let { user ->
-                try {
-                    val userRef = firestore.collection("users").document(user.uid)
-                    val data = mapOf(
-                        "watching.$movieId.position" to position,
-                        "watching.$movieId.duration" to duration,
-                        "watching.$movieId.timestamp" to now
-                    )
-                    userRef.set(data, com.google.firebase.firestore.SetOptions.merge()).await()
-                    lastProgressUpdate[movieId] = now
-                } catch (e: Exception) {
-                    Log.w("MovieRepository", "Firestore sync error in updatePlaybackProgress: ${e.message}")
-                }
-            }
+        // Optimización de escritura: Guardado de progreso cada 30s en SharedPreferences para cuidar memorias de TV Box
+        if (now - lastUpdate >= 30000L) {
+            localUserStorage.updateWatchProgress(movieId, null, position, duration)
+            lastProgressUpdate[movieId] = now
         }
 
         if (duration > 0 && position.toDouble() / duration.toDouble() > 0.95) {
@@ -710,11 +606,31 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override fun getUser(): Flow<User?> = combine(_currentUser.asStateFlow(), _avatarOverride.asStateFlow()) { user, override ->
-        val baseUser = user ?: User(username = "Usuario", isLoggedIn = false)
+        val baseUser = user ?: if (isGuestMode()) User(username = "Invitado", isLoggedIn = true) else User(username = "Usuario", isLoggedIn = false)
         if (override != null) {
             baseUser.copy(profilePictureUri = override)
         } else {
             baseUser
+        }
+    }
+
+    override fun isGuestMode(): Boolean {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("is_guest_mode", false) || firebaseAuth.currentUser?.isAnonymous == true
+    }
+
+    override suspend fun loginAnonymously(): Boolean {
+        return try {
+            val result = firebaseAuth.signInAnonymously().await()
+            if (result.user != null) {
+                val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("is_guest_mode", true).apply()
+                _currentUser.value = User(username = "Invitado", email = "", isLoggedIn = true)
+                true
+            } else false
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error signing in anonymously: ${e.message}")
+            false
         }
     }
 
@@ -789,7 +705,10 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("is_guest_mode", false).apply()
         firebaseAuth.signOut()
+        _currentUser.value = null
         _avatarOverride.value = null
     }
 

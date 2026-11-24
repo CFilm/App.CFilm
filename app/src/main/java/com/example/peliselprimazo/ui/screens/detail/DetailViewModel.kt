@@ -10,6 +10,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.peliselprimazo.data.AdsManager
+import com.example.peliselprimazo.data.util.AnalyticsHelper
 import com.example.peliselprimazo.domain.model.Movie
 import com.example.peliselprimazo.domain.model.ServerLink
 import com.example.peliselprimazo.domain.repository.MovieRepository
@@ -28,6 +29,7 @@ class DetailViewModel @Inject constructor(
     private val getStreamUrlUseCase: GetStreamUrlUseCase,
     private val toggleLikeUseCase: ToggleLikeUseCase,
     private val adsManager: AdsManager,
+    private val analyticsHelper: AnalyticsHelper,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -240,6 +242,28 @@ class DetailViewModel @Inject constructor(
     fun toggleViendo() { viewModelScope.launch { repository.addToWatching(movieId) } }
     fun toggleTerminado() { viewModelScope.launch { repository.toggleFinished(movieId) } }
     fun toggleVerDespues() { viewModelScope.launch { repository.toggleWatchLater(movieId) } }
+
+    fun isGuestMode(): Boolean = repository.isGuestMode()
+
+    fun continueAsGuest(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoadingAuth.value = true
+            _error.value = null
+            try {
+                if (repository.loginAnonymously()) {
+                    analyticsHelper.logGuestModeEntered()
+                    _isLoadingAuth.value = false
+                    onSuccess()
+                } else {
+                    _error.value = "Error al ingresar como invitado"
+                    _isLoadingAuth.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error al ingresar como invitado"
+                _isLoadingAuth.value = false
+            }
+        }
+    }
 
     fun login(e: String, p: String, onSuccess: () -> Unit) {
         viewModelScope.launch {

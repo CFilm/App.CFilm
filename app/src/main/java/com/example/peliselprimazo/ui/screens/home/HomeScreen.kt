@@ -110,7 +110,7 @@ fun HomeScreen(
 
     LaunchedEffect(user?.isLoggedIn) {
         val targetMovie = pendingMovieToPlay
-        if (user?.isLoggedIn == true && targetMovie != null) {
+        if ((user?.isLoggedIn == true || viewModel.isGuestMode()) && targetMovie != null) {
             pendingMovieToPlay = null
             showAuthDialog = false
             delay(300)
@@ -154,7 +154,7 @@ fun HomeScreen(
     }
 
     val handlePlayRequest = { movie: Movie ->
-        if (user?.isLoggedIn == true) {
+        if (user?.isLoggedIn == true || viewModel.isGuestMode()) {
             onDirectPlayClick(movie)
         } else {
             pendingMovieToPlay = movie
@@ -350,6 +350,16 @@ fun HomeScreen(
                 error = error,
                 onLogin = { e, p -> viewModel.login(e, p) { } },
                 onRegister = { u, e, p -> viewModel.register(u, e, p) { } },
+                onGuestLogin = {
+                    viewModel.continueAsGuest {
+                        showAuthDialog = false
+                        val target = pendingMovieToPlay
+                        if (target != null) {
+                            pendingMovieToPlay = null
+                            onDirectPlayClick(target)
+                        }
+                    }
+                },
                 onResetPassword = { email, callback ->
                     viewModel.sendPasswordResetEmail(email) { isSuccess, msg ->
                         callback(isSuccess, msg)
