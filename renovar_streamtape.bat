@@ -15,7 +15,12 @@ if exist "C:\Users\Admin\Inkscape\bin\python.exe" (
     set "PYTHON_CMD=python"
 )
 
-"%PYTHON_CMD%" "%~dp0scripts\streamtape_remote_upload.py" --fetch-inactive %*
+if exist "%~dp0inactivos.txt" (
+    echo [*] Detectado archivo inactivos.txt con enlaces...
+    "%PYTHON_CMD%" "%~dp0scripts\streamtape_remote_upload.py" --file "%~dp0inactivos.txt" %*
+) else (
+    "%PYTHON_CMD%" "%~dp0scripts\streamtape_remote_upload.py" --fetch-inactive %*
+)
 
 echo.
 echo ========================================================
