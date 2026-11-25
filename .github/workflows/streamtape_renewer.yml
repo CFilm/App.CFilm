@@ -1,0 +1,24 @@
+name: Streamtape Auto-Renewer Daily
+
+on:
+  schedule:
+    # Corre automáticamente todos los días a las 14:00 UTC (8:00 AM hora de México / CST)
+    - cron: '0 14 * * *'
+  workflow_dispatch: # Permite ejecutar manualmente en cualquier momento desde la pestaña Actions en GitHub
+
+jobs:
+  renew-streamtape-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Streamtape Inactive Links Renewer
+        run: |
+          python scripts/streamtape_remote_upload.py --fetch-inactive
