@@ -24,11 +24,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build iOS Simulator Framework
-        run: ./gradlew :shared:linkReleaseFrameworkIosSimulatorArm64
+      - name: Build KMP Shared Module (Android, iOS, macOS)
+        run: ./gradlew :shared:assemble
 
-      - name: Upload iOS Framework Artifact
+      - name: Upload Shared Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: shared-ios-framework
-          path: shared/build/bin/iosSimulatorArm64/releaseFramework/
+          name: shared-apple-builds
+          path: shared/build/
