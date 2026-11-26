@@ -1,6 +1,7 @@
 package com.example.peliselprimazo.data.util
 
 import android.content.Context
+import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
@@ -41,6 +42,19 @@ class AnalyticsHelper @Inject constructor(
     fun logGuestModeEntered() {
         try {
             firebaseAnalytics.logEvent("guest_mode_entered", null)
+            setUserType(true)
+        } catch (e: Exception) {
+            // Non-blocking
+        }
+    }
+
+    fun setUserType(isGuest: Boolean) {
+        try {
+            val userType = if (isGuest) "guest" else "registered"
+            firebaseAnalytics.setUserProperty("user_type", userType)
+            firebaseAnalytics.logEvent("user_session_type", android.os.Bundle().apply {
+                putString("user_type", userType)
+            })
         } catch (e: Exception) {
             // Non-blocking
         }

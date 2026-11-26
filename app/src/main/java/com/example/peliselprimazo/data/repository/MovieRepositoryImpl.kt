@@ -620,18 +620,14 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun loginAnonymously(): Boolean {
-        return try {
-            val result = firebaseAuth.signInAnonymously().await()
-            if (result.user != null) {
-                val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                prefs.edit().putBoolean("is_guest_mode", true).apply()
-                _currentUser.value = User(username = "Invitado", email = "", isLoggedIn = true)
-                true
-            } else false
+        try {
+            firebaseAuth.signInAnonymously().await()
         } catch (e: Exception) {
-            Log.e("MovieRepository", "Error signing in anonymously: ${e.message}")
-            false
+            Log.w("MovieRepository", "Firebase anonymous auth warning (falling back to local guest mode): ${e.message}")
         }
+        localUserStorage.isGuestMode = true
+        _currentUser.value = User(username = "Invitado", email = "", isLoggedIn = true)
+        return true
     }
 
     override suspend fun register(username: String, email: String, password: String) {

@@ -69,8 +69,8 @@ object HomeSectionBuilder {
         // 1. Continuar Viendo
         val watchingItems = watching.take(12)
 
-        // 2. Recién agregados
-        val newlyAdded = pickDeduplicated(list, 12, usedIds)
+        // 2. Recién agregados (Ordenados estrictamente por fecha de estreno/agregado)
+        val newlyAdded = pickDeduplicated(list.sortedByDescending { it.releaseDate }, 12, usedIds)
 
         // 3. Recomendados del Día
         val userLikedOrWatched = list.filter { it.isLiked || it.isSaved || it.isWatching }
@@ -166,7 +166,7 @@ object HomeSectionBuilder {
         if (list.isEmpty()) return emptyList()
         val usedIds = mutableSetOf<Int>()
 
-        val newlyAdded = pickDeduplicated(list, 15, usedIds)
+        val newlyAdded = pickDeduplicated(list.sortedByDescending { it.releaseDate }, 15, usedIds)
         val topMovies = list.sortedByDescending { it.rating }
         val recentMovies = list.sortedByDescending { it.releaseDate }
         val diverseRecommended = pickDeduplicated(createDailyRotatedSelection(list, list.size, seedOffset = 50), 15, usedIds)
@@ -234,7 +234,7 @@ object HomeSectionBuilder {
         if (list.isEmpty()) return emptyList()
         val usedIds = mutableSetOf<Int>()
 
-        val newlyAdded = pickDeduplicated(list, 15, usedIds)
+        val newlyAdded = pickDeduplicated(list.sortedByDescending { it.releaseDate }, 15, usedIds)
         val topSeries = list.sortedByDescending { it.rating }
         val recentSeries = list.sortedByDescending { it.releaseDate }
         val diverseSeries = pickDeduplicated(createDailyRotatedSelection(list, list.size, seedOffset = 70), 15, usedIds)

@@ -2,3 +2,4 @@
 # No importa si están revueltos (películas, series o anime).
 # El script identificará automáticamente el título, categoría y carpeta correspondiente.
 
+
