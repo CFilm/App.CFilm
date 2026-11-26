@@ -7,5 +7,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.google.services) apply false
     alias(libs.plugins.firebase.crashlytics) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
     id("org.jetbrains.compose") version "1.7.0" apply false
 }
