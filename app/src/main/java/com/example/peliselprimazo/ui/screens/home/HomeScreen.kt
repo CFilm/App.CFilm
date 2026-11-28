@@ -37,6 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.example.peliselprimazo.R
+import com.example.peliselprimazo.ui.utils.LanguageManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -532,6 +535,7 @@ fun ProfileMainContent(
     }
 
     var showPremiumDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     if (showPremiumDialog) {
         PremiumBenefitsDialog(
@@ -737,14 +741,83 @@ fun ProfileMainContent(
 
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            Text(text = "Ajustes", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-            ProfileSettingItem(title = "Soporte y Reportar Falla", icon = Icons.Default.SupportAgent, onClick = onSupportClick)
-            ProfileSettingItem(title = "Limpiar Caché", icon = Icons.Default.Delete, onClick = { viewModel.clearCache() })
+            Text(text = stringResource(R.string.settings), color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            ProfileSettingItem(title = stringResource(R.string.language), icon = Icons.Default.Language, onClick = { showLanguageDialog = true })
+            ProfileSettingItem(title = stringResource(R.string.support_and_report), icon = Icons.Default.SupportAgent, onClick = onSupportClick)
+            ProfileSettingItem(title = stringResource(R.string.clear_cache), icon = Icons.Default.Delete, onClick = { viewModel.clearCache() })
             if (user?.isLoggedIn == true) {
-                ProfileSettingItem(title = "Cerrar Sesión", icon = Icons.AutoMirrored.Filled.ExitToApp, iconColor = Color.Red, textColor = Color.Red, onClick = { viewModel.logout() })
+                ProfileSettingItem(title = stringResource(R.string.logout), icon = Icons.AutoMirrored.Filled.ExitToApp, iconColor = Color.Red, textColor = Color.Red, onClick = { viewModel.logout() })
             }
         }
     }
+
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            onDismiss = { showLanguageDialog = false }
+        )
+    }
+}
+
+@Composable
+fun LanguageSelectionDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val currentCode = LanguageManager.getCurrentLanguageCode(context)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        title = {
+            Text(
+                text = stringResource(R.string.select_language),
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                LanguageManager.supportedLanguages.forEach { lang ->
+                    val isSelected = lang.code == currentCode
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) Color(0xFFE50914).copy(alpha = 0.2f) else Color.Transparent)
+                            .clickable {
+                                LanguageManager.setAppLanguage(context, lang.code)
+                                onDismiss()
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = lang.flagEmoji, fontSize = 20.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = lang.displayName,
+                                color = if (isSelected) Color(0xFFE50914) else Color.White,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color(0xFFE50914)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel), color = Color.Gray)
+            }
+        }
+    )
 }
 
 @Composable

@@ -8,13 +8,12 @@ kotlin {
     sourceSets {
         main {
             kotlin.srcDir("src/main/kotlin")
-            kotlin.srcDir("../app/src/main/java/com/example/peliselprimazo/domain/model")
-            kotlin.srcDir("../app/src/main/java/com/example/peliselprimazo/data/model")
         }
     }
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
@@ -31,10 +30,11 @@ compose.desktop {
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb
             )
             packageName = "CFilmDesktop"
-            packageVersion = "1.0.0"
+            packageVersion = "2.4.22"
         }
     }
 }
