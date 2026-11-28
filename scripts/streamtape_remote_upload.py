@@ -184,37 +184,99 @@ class StreamtapeUploader:
         print(f"[!] Folder '{folder_name}' not found {parent_desc}. (Using parent location).")
         return parent_folder_id
 
-    def get_target_folder_id_for_media(self, category: str, title: str, season: Optional[int] = None) -> Optional[str]:
+    def find_root_folders_by_names(self, names: List[str]) -> List[str]:
+        """Finds root folder IDs matching any of the given names (case-insensitive, singular/plural)."""
+        root_folders = self.list_folders(None)
+        matched_ids = []
+        clean_names = [n.strip().lower() for n in names]
+        for f in root_folders:
+            fname = f.get("name", "").strip().lower()
+            if fname in clean_names or any(cn == fname for cn in clean_names):
+                matched_ids.append(f["id"])
+        return matched_ids
+
+    def find_subfolder_by_name(self, parent_folder_id: str, folder_name: str) -> Optional[str]:
+        """Finds a subfolder ID under parent_folder_id matching folder_name (fuzzy/flexible match)."""
+        cache_key = (parent_folder_id, folder_name.strip().lower())
+        if cache_key in self.folder_cache:
+            return self.folder_cache[cache_key]
+
+        subfolders = self.list_folders(parent_folder_id)
+        target_clean = folder_name.strip().lower().replace("_", " ").replace("-", " ")
+
+        # 1. Exact match
+        for f in subfolders:
+            fname = f.get("name", "").strip().lower().replace("_", " ").replace("-", " ")
+            if fname == target_clean:
+                fid = f["id"]
+                self.folder_cache[cache_key] = fid
+                print(f"[✓] Located existing folder '{f.get('name')}' -> ID: {fid}")
+                return fid
+
+        # 2. Flexible / Partial match
+        for f in subfolders:
+            fname = f.get("name", "").strip().lower().replace("_", " ").replace("-", " ")
+            if target_clean in fname or fname in target_clean:
+                fid = f["id"]
+                self.folder_cache[cache_key] = fid
+                print(f"[✓] Located matching subfolder '{f.get('name')}' -> ID: {fid}")
+                return fid
+
+        return None
+
+    def get_target_folder_id_for_media(self, category: str, title: str, season: Optional[int] = None) -> Tuple[Optional[str], str]:
         """
-        Locates existing Streamtape folder structure:
-        - Movies ('movie') -> 'peliculas' (root folder)
-        - Series ('series') -> 'series' / '[Title]' / 's[Season]' (e.g. 'series/Breaking Bad/s1')
-        - Anime ('anime')   -> 'anime'  / '[Title]' / 's[Season]' (e.g. 'anime/Naruto/s1')
+        Smart Folder Resolver:
+        1. First checks if 'title' folder exists under 'anime' or 'animes' in Streamtape.
+        2. Next checks if 'title' folder exists under 'series' or 'serie'.
+        3. Fallback to requested category.
+        Returns Tuple[folder_id, verified_category].
         """
+        clean_title = title.strip().lower().replace("_", " ").replace("-", " ")
+
+        # 1. Check under 'anime' or 'animes' root folders first
+        anime_roots = self.find_root_folders_by_names(["anime", "animes"])
+        for anime_root_id in anime_roots:
+            title_id = self.find_subfolder_by_name(anime_root_id, clean_title)
+            if title_id:
+                season_name = f"s{season or 1}"
+                season_id = self.find_subfolder_by_name(title_id, season_name)
+                final_id = season_id or title_id
+                print(f"[✓] Smart Resolver: Identified as ANIME under folder '{title}' -> ID: {final_id}")
+                return final_id, "anime"
+
+        # 2. Check under 'series' or 'serie' root folders
+        series_roots = self.find_root_folders_by_names(["series", "serie"])
+        for series_root_id in series_roots:
+            title_id = self.find_subfolder_by_name(series_root_id, clean_title)
+            if title_id:
+                season_name = f"s{season or 1}"
+                season_id = self.find_subfolder_by_name(title_id, season_name)
+                final_id = season_id or title_id
+                print(f"[✓] Smart Resolver: Identified as SERIES under folder '{title}' -> ID: {final_id}")
+                return final_id, "series"
+
+        # 3. Fallback to requested category
         cat = category.strip().lower()
-
         if cat in ("movie", "peliculas", "película", "pelicula"):
-            return self.get_existing_folder("peliculas", parent_folder_id=None)
-
+            movies_roots = self.find_root_folders_by_names(["peliculas", "pelicula", "movies", "movie"])
+            return (movies_roots[0] if movies_roots else None), "movie"
         elif cat == "anime":
-            anime_root_id = self.get_existing_folder("anime", parent_folder_id=None)
-            if not anime_root_id:
-                return None
-            title_folder_id = self.get_existing_folder(title, parent_folder_id=anime_root_id)
-            if not title_folder_id:
-                return anime_root_id
-            season_folder_name = f"s{season or 1}"
-            return self.get_existing_folder(season_folder_name, parent_folder_id=title_folder_id)
-
+            if anime_roots:
+                title_id = self.find_subfolder_by_name(anime_roots[0], clean_title)
+                if title_id:
+                    season_id = self.find_subfolder_by_name(title_id, f"s{season or 1}")
+                    return (season_id or title_id), "anime"
+                return anime_roots[0], "anime"
         else:
-            series_root_id = self.get_existing_folder("series", parent_folder_id=None)
-            if not series_root_id:
-                return None
-            title_folder_id = self.get_existing_folder(title, parent_folder_id=series_root_id)
-            if not title_folder_id:
-                return series_root_id
-            season_folder_name = f"s{season or 1}"
-            return self.get_existing_folder(season_folder_name, parent_folder_id=title_folder_id)
+            if series_roots:
+                title_id = self.find_subfolder_by_name(series_roots[0], clean_title)
+                if title_id:
+                    season_id = self.find_subfolder_by_name(title_id, f"s{season or 1}")
+                    return (season_id or title_id), "series"
+                return series_roots[0], "series"
+
+        return None, category
 
     def add_remote_upload(self, video_url: str, folder_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Connects to Streamtape /remotedl/add endpoint to start server-side transfer."""
@@ -309,7 +371,10 @@ class StreamtapeUploader:
             print(f" 🎬 Detected Title         : '{title}'")
             print(f" 📌 Season / Episode       : 's{season or 1}{ep_str}'")
 
-            target_folder_id = self.get_target_folder_id_for_media(category, title, season)
+            target_folder_id, final_category = self.get_target_folder_id_for_media(category, title, season)
+            print(f" 📂 Target Category        : '{final_category.upper()}'")
+            print(f" 📁 Target Folder ID       : '{target_folder_id}'")
+
             result = self.add_remote_upload(video_url, folder_id=target_folder_id)
 
             if result:
@@ -318,7 +383,7 @@ class StreamtapeUploader:
                 results_list.append({
                     "url": video_url,
                     "title": title,
-                    "category": category,
+                    "category": final_category,
                     "season": season or 1,
                     "upload_id": upload_id,
                     "folder_id": target_folder_id
