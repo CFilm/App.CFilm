@@ -18,6 +18,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.example.peliselprimazo.ui.utils.SectionTitleTranslator
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +38,7 @@ fun HomeSectionsContent(
     onDirectPlayClick: (Movie) -> Unit,
     announcement: String? = null
 ) {
+    val context = LocalContext.current
     var selectedSection by remember { mutableStateOf<HomeSection?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -105,7 +108,7 @@ fun HomeSectionsContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = section.title,
+                                text = SectionTitleTranslator.getLocalizedTitle(section.title, context),
                                 color = Color.White,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
