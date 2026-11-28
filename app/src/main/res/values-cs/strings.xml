@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="settings">Nastavení</string>
+    <string name="language">Jazyk</string>
+    <string name="select_language">Vyberte jazyk</string>
+    <string name="support_and_report">Podpora a nahlášení chyby</string>
+    <string name="clear_cache">Vymazat mezipaměť</string>
+    <string name="logout">Odhlásit se</string>
+    <string name="guest_user">Hostující uživatel</string>
+    <string name="continue_as_guest">POKRAČOVAT JAKO HOST</string>
+    <string name="total_content">Celkový obsah</string>
+    <string name="approx_hours">Cca hodin</string>
+    <string name="favorites">Oblíbené</string>
+    <string name="watching">Sledováno</string>
+    <string name="finished">Dokončeno</string>
+    <string name="watch_later">Sledovat později</string>
+    <string name="cancel">Zrušit</string>
+</resources>

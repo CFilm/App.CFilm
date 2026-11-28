@@ -16,7 +16,13 @@ object LanguageManager {
     val supportedLanguages = listOf(
         AppLanguage("es", "Español", "🇪🇸"),
         AppLanguage("en", "English", "🇺🇸"),
-        AppLanguage("pt", "Português", "🇧🇷")
+        AppLanguage("pt", "Português", "🇧🇷"),
+        AppLanguage("fr", "Français", "🇫🇷"),
+        AppLanguage("de", "Deutsch", "🇩🇪"),
+        AppLanguage("it", "Italiano", "🇮🇹"),
+        AppLanguage("ru", "Русский", "🇷🇺"),
+        AppLanguage("zh", "中文", "🇨🇳"),
+        AppLanguage("cs", "Čeština", "🇨🇿")
     )
 
     fun getCurrentLanguageCode(context: Context): String {

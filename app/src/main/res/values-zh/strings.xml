@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="settings">设置</string>
+    <string name="language">语言</string>
+    <string name="select_language">选择语言</string>
+    <string name="support_and_report">支持与问题反馈</string>
+    <string name="clear_cache">清除缓存</string>
+    <string name="logout">退出登录</string>
+    <string name="guest_user">游客用户</string>
+    <string name="continue_as_guest">以游客身份继续</string>
+    <string name="total_content">总内容</string>
+    <string name="approx_hours">约计小时</string>
+    <string name="favorites">收藏夹</string>
+    <string name="watching">正在观看</string>
+    <string name="finished">已看完</string>
+    <string name="watch_later">稍后观看</string>
+    <string name="cancel">取消</string>
+</resources>

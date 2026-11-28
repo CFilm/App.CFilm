@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="settings">Impostazioni</string>
+    <string name="language">Lingua</string>
+    <string name="select_language">Seleziona lingua</string>
+    <string name="support_and_report">Supporto e segnala problema</string>
+    <string name="clear_cache">Svuota cache</string>
+    <string name="logout">Disconnetti</string>
+    <string name="guest_user">Utente ospite</string>
+    <string name="continue_as_guest">CONTINUA COME OSPITE</string>
+    <string name="total_content">Contenuto totale</string>
+    <string name="approx_hours">Ore circa</string>
+    <string name="favorites">Preferiti</string>
+    <string name="watching">In visione</string>
+    <string name="finished">Completati</string>
+    <string name="watch_later">Guarda più tardi</string>
+    <string name="cancel">Annulla</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="settings">Настройки</string>
+    <string name="language">Язык</string>
+    <string name="select_language">Выберите язык</string>
+    <string name="support_and_report">Поддержка и сообщение об ошибке</string>
+    <string name="clear_cache">Очистить кэш</string>
+    <string name="logout">Выйти</string>
+    <string name="guest_user">Гостевой пользователь</string>
+    <string name="continue_as_guest">ПРОДОЛЖИТЬ КАК ГОСТЬ</string>
+    <string name="total_content">Всего контента</string>
+    <string name="approx_hours">Прибл. часов</string>
+    <string name="favorites">Избранное</string>
+    <string name="watching">Смотрю</string>
+    <string name="finished">Просмотрено</string>
+    <string name="watch_later">Смотреть позже</string>
+    <string name="cancel">Отмена</string>
+</resources>
