@@ -51,6 +51,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val localizedContext = com.example.peliselprimazo.ui.utils.LanguageManager.applyLocaleToContext(newBase)
+        super.attachBaseContext(localizedContext)
+    }
+
     @Inject
     lateinit var adsManager: AdsManager
 
