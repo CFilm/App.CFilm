@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">Trang chủ</string>
+    <string name="tab_movies">Phim lẻ</string>
+    <string name="tab_series">Phim bộ</string>
+    <string name="tab_profile">Hồ sơ</string>
+    <string name="search_placeholder">Tìm phim lẻ, phim bộ, anime...</string>
+    <string name="updating_content">Đang cập nhật nội dung...</string>
+    <string name="all_genres">Tất cả thể loại</string>
+    <string name="settings">Cài đặt</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="select_language">Chọn ngôn ngữ</string>
+    <string name="support_and_report">Hỗ trợ &amp; Báo lỗi</string>
+    <string name="clear_cache">Xóa bộ nhớ đệm</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="guest_user">Khách</string>
+    <string name="continue_as_guest">TIẾP TỤC VỚI TƯ CÁCH KHÁCH</string>
+    <string name="total_content">Tổng nội dung</string>
+    <string name="approx_hours">Khoảng giờ</string>
+    <string name="favorites">Yêu thích</string>
+    <string name="watching">Đang xem</string>
+    <string name="finished">Đã xem xong</string>
+    <string name="watch_later">Xem sau</string>
+    <string name="cancel">Hủy</string>
+</resources>

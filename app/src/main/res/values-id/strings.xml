@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">Beranda</string>
+    <string name="tab_movies">Film</string>
+    <string name="tab_series">Serial</string>
+    <string name="tab_profile">Profil</string>
+    <string name="search_placeholder">Cari film, serial, anime...</string>
+    <string name="updating_content">Memperbarui konten...</string>
+    <string name="all_genres">Semua Genre</string>
+    <string name="settings">Pengaturan</string>
+    <string name="language">Bahasa</string>
+    <string name="select_language">Pilih Bahasa</string>
+    <string name="support_and_report">Dukungan &amp; Laporkan Masalah</string>
+    <string name="clear_cache">Hapus Cache</string>
+    <string name="logout">Keluar</string>
+    <string name="guest_user">Pengguna Tamu</string>
+    <string name="continue_as_guest">LANJUTKAN SEBAGAI TAMU</string>
+    <string name="total_content">Total Konten</string>
+    <string name="approx_hours">Perkiraan Jam</string>
+    <string name="favorites">Favorit</string>
+    <string name="watching">Sedang Ditonton</string>
+    <string name="finished">Selesai</string>
+    <string name="watch_later">Tonton Nanti</string>
+    <string name="cancel">Batal</string>
+</resources>

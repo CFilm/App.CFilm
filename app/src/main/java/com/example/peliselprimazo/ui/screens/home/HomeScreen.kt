@@ -135,10 +135,10 @@ fun HomeScreen(
     }
 
     val categories = listOf(
-        "all" to "Inicio",
-        "movie" to "Películas",
-        "series" to "Series",
-        "profile" to "Perfil"
+        "all" to stringResource(R.string.tab_home),
+        "movie" to stringResource(R.string.tab_movies),
+        "series" to stringResource(R.string.tab_series),
+        "profile" to stringResource(R.string.tab_profile)
     )
 
     val pagerState = rememberPagerState(initialPage = 0) { categories.size }

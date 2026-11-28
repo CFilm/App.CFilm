@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">होम</string>
+    <string name="tab_movies">फिल्में</string>
+    <string name="tab_series">सीरीज</string>
+    <string name="tab_profile">प्रोफाइल</string>
+    <string name="search_placeholder">फिल्में, सीरीज, एनीमे खोजें...</string>
+    <string name="updating_content">सामग्री अपडेट हो रही है...</string>
+    <string name="all_genres">सभी शैलियाँ</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="language">भाषा</string>
+    <string name="select_language">भाषा चुनें</string>
+    <string name="support_and_report">सहायता और समस्या रिपोर्ट करें</string>
+    <string name="clear_cache">कैश साफ़ करें</string>
+    <string name="logout">लॉग आउट</string>
+    <string name="guest_user">अतिथि उपयोगकर्ता</string>
+    <string name="continue_as_guest">अतिथि के रूप में जारी रखें</string>
+    <string name="total_content">कुल सामग्री</string>
+    <string name="approx_hours">अनुमानित घंटे</string>
+    <string name="favorites">पसंदीदा</string>
+    <string name="watching">देख रहे हैं</string>
+    <string name="finished">पूर्ण</string>
+    <string name="watch_later">बाद में देखें</string>
+    <string name="cancel">रद्द करें</string>
+</resources>

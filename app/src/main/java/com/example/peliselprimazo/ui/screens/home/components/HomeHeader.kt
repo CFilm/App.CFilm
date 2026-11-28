@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.example.peliselprimazo.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -63,7 +65,7 @@ fun TopBarHeader(
                         strokeWidth = 2.5.dp
                     )
                     Text(
-                        text = "Actualizando contenido...",
+                        text = stringResource(R.string.updating_content),
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -140,7 +142,7 @@ fun TopSearchBar(
                     .fillMaxWidth()
                     .height(56.dp)
                     .focusRequester(focusRequester),
-                placeholder = { Text("¿Qué quieres ver hoy?", color = Color.Gray) },
+                placeholder = { Text(stringResource(R.string.search_placeholder), color = Color.Gray) },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,

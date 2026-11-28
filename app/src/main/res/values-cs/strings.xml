@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CFilm</string>
+    <string name="tab_home">Domů</string>
+    <string name="tab_movies">Filmy</string>
+    <string name="tab_series">Seriály</string>
+    <string name="tab_profile">Profil</string>
+    <string name="search_placeholder">Hledat filmy, seriály, anime...</string>
+    <string name="updating_content">Aktualizace obsahu...</string>
+    <string name="all_genres">Všechny žánry</string>
     <string name="settings">Nastavení</string>
     <string name="language">Jazyk</string>
     <string name="select_language">Vyberte jazyk</string>

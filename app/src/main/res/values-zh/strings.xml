@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CFilm</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_movies">电影</string>
+    <string name="tab_series">剧集</string>
+    <string name="tab_profile">个人中心</string>
+    <string name="search_placeholder">搜索电影、剧集、动漫...</string>
+    <string name="updating_content">正在更新内容...</string>
+    <string name="all_genres">所有流派</string>
     <string name="settings">设置</string>
     <string name="language">语言</string>
     <string name="select_language">选择语言</string>

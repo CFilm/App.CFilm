@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">홈</string>
+    <string name="tab_movies">영화</string>
+    <string name="tab_series">시리즈</string>
+    <string name="tab_profile">프로필</string>
+    <string name="search_placeholder">영화, 시리즈, 애니메이션 검색...</string>
+    <string name="updating_content">콘텐츠 업데이트 중...</string>
+    <string name="all_genres">모든 장르</string>
+    <string name="settings">설정</string>
+    <string name="language">언어</string>
+    <string name="select_language">언어 선택</string>
+    <string name="support_and_report">지원 및 문제 신고</string>
+    <string name="clear_cache">캐시 지우기</string>
+    <string name="logout">로그아웃</string>
+    <string name="guest_user">게스트 사용자</string>
+    <string name="continue_as_guest">게스트로 계속하기</string>
+    <string name="total_content">총 콘텐츠</string>
+    <string name="approx_hours">예상 시간</string>
+    <string name="favorites">즐겨찾기</string>
+    <string name="watching">시청 중</string>
+    <string name="finished">시청 완료</string>
+    <string name="watch_later">나중에 보기</string>
+    <string name="cancel">취소</string>
+</resources>

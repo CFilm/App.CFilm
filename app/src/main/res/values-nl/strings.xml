@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_movies">Films</string>
+    <string name="tab_series">Series</string>
+    <string name="tab_profile">Profiel</string>
+    <string name="search_placeholder">Zoek films, series, anime...</string>
+    <string name="updating_content">Inhoud bijwerken...</string>
+    <string name="all_genres">Alle Genres</string>
+    <string name="settings">Instellingen</string>
+    <string name="language">Taal</string>
+    <string name="select_language">Selecteer Taal</string>
+    <string name="support_and_report">Ondersteuning &amp; Probleem Melden</string>
+    <string name="clear_cache">Cache Wissen</string>
+    <string name="logout">Uitloggen</string>
+    <string name="guest_user">Gastgebruiker</string>
+    <string name="continue_as_guest">DOORGAAN ALS GAST</string>
+    <string name="total_content">Totale Inhoud</string>
+    <string name="approx_hours">Ongeveer Uur</string>
+    <string name="favorites">Favorieten</string>
+    <string name="watching">Aan het kijken</string>
+    <string name="finished">Voltooid</string>
+    <string name="watch_later">LATER BEKIJKEN</string>
+    <string name="cancel">Annuleren</string>
+</resources>

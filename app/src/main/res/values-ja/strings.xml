@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">ホーム</string>
+    <string name="tab_movies">映画</string>
+    <string name="tab_series">ドラマ</string>
+    <string name="tab_profile">マイページ</string>
+    <string name="search_placeholder">映画、ドラマ、アニメを検索...</string>
+    <string name="updating_content">コンテンツを更新中...</string>
+    <string name="all_genres">すべてのジャンル</string>
+    <string name="settings">設定</string>
+    <string name="language">言語</string>
+    <string name="select_language">言語を選択</string>
+    <string name="support_and_report">サポート＆問題の報告</string>
+    <string name="clear_cache">キャッシュを消去</string>
+    <string name="logout">ログアウト</string>
+    <string name="guest_user">ゲストユーザー</string>
+    <string name="continue_as_guest">ゲストとして継続</string>
+    <string name="total_content">総作品数</string>
+    <string name="approx_hours">予想時間</string>
+    <string name="favorites">お気に入り</string>
+    <string name="watching">視聴中</string>
+    <string name="finished">視聴完了</string>
+    <string name="watch_later">後で見る</string>
+    <string name="cancel">キャンセル</string>
+</resources>

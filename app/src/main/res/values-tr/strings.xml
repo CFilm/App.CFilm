@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">Ana Sayfa</string>
+    <string name="tab_movies">Filmler</string>
+    <string name="tab_series">Diziler</string>
+    <string name="tab_profile">Profil</string>
+    <string name="search_placeholder">Film, dizi, anime ara...</string>
+    <string name="updating_content">İçerik güncelleniyor...</string>
+    <string name="all_genres">Tüm Türler</string>
+    <string name="settings">Ayarlar</string>
+    <string name="language">Dil</string>
+    <string name="select_language">Dil Seçin</string>
+    <string name="support_and_report">Destek ve Sorun Bildir</string>
+    <string name="clear_cache">Önbelleği Temizle</string>
+    <string name="logout">Çıkış Yap</string>
+    <string name="guest_user">Misafir Kullanıcı</string>
+    <string name="continue_as_guest">MİSAFİR OLARAK DEVAM ET</string>
+    <string name="total_content">Toplam İçerik</string>
+    <string name="approx_hours">Yaklaşık Saat</string>
+    <string name="favorites">Favoriler</string>
+    <string name="watching">İzleniyor</string>
+    <string name="finished">Tamamlandı</string>
+    <string name="watch_later">Daha Sonra İzle</string>
+    <string name="cancel">İptal</string>
+</resources>

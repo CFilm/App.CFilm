@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CFilm</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_movies">Film</string>
+    <string name="tab_series">Serie TV</string>
+    <string name="tab_profile">Profilo</string>
+    <string name="search_placeholder">Cerca film, serie, anime...</string>
+    <string name="updating_content">Aggiornamento contenuti...</string>
+    <string name="all_genres">Tutti i generi</string>
     <string name="settings">Impostazioni</string>
     <string name="language">Lingua</string>
     <string name="select_language">Seleziona lingua</string>

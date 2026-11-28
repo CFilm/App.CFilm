@@ -22,7 +22,17 @@ object LanguageManager {
         AppLanguage("it", "Italiano", "🇮🇹"),
         AppLanguage("ru", "Русский", "🇷🇺"),
         AppLanguage("zh", "中文", "🇨🇳"),
-        AppLanguage("cs", "Čeština", "🇨🇿")
+        AppLanguage("cs", "Čeština", "🇨🇿"),
+        AppLanguage("ja", "日本語", "🇯🇵"),
+        AppLanguage("ko", "한국어", "🇰🇷"),
+        AppLanguage("tr", "Türkçe", "🇹🇷"),
+        AppLanguage("ar", "العربية", "🇸🇦"),
+        AppLanguage("hi", "हिन्दी", "🇮🇳"),
+        AppLanguage("id", "Bahasa Indonesia", "🇮🇩"),
+        AppLanguage("nl", "Nederlands", "🇳🇱"),
+        AppLanguage("pl", "Polski", "🇵🇱"),
+        AppLanguage("vi", "Tiếng Việt", "🇻🇳"),
+        AppLanguage("th", "ไทย", "🇹🇭")
     )
 
     fun getCurrentLanguageCode(context: Context): String {

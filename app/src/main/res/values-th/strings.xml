@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">หน้าแรก</string>
+    <string name="tab_movies">ภาพยนตร์</string>
+    <string name="tab_series">ซีรีส์</string>
+    <string name="tab_profile">โปรไฟล์</string>
+    <string name="search_placeholder">ค้นหาภาพยนตร์, ซีรีส์, อนิเมะ...</string>
+    <string name="updating_content">กำลังอัปเดตเนื้อหา...</string>
+    <string name="all_genres">ทุกหมวดหมู่</string>
+    <string name="settings">การตั้งค่า</string>
+    <string name="language">ภาษา</string>
+    <string name="select_language">เลือกภาษา</string>
+    <string name="support_and_report">ช่วยเหลือ &amp; รายงานปัญหา</string>
+    <string name="clear_cache">ล้างแคช</string>
+    <string name="logout">ออกจากระบบ</string>
+    <string name="guest_user">ผู้ใช้ทั่วไป</string>
+    <string name="continue_as_guest">ดำเนินการต่อในฐานะแขก</string>
+    <string name="total_content">เนื้อหาทั้งหมด</string>
+    <string name="approx_hours">ชั่วโมงโดยประมาณ</string>
+    <string name="favorites">รายการโปรด</string>
+    <string name="watching">กำลังรับชม</string>
+    <string name="finished">รับชมแล้ว</string>
+    <string name="watch_later">รับชมภายหลัง</string>
+    <string name="cancel">ยกเลิก</string>
+</resources>

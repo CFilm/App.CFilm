@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">Główna</string>
+    <string name="tab_movies">Filmy</string>
+    <string name="tab_series">Seriale</string>
+    <string name="tab_profile">Profil</string>
+    <string name="search_placeholder">Szukaj filmów, seriali, anime...</string>
+    <string name="updating_content">Aktualizowanie zawartości...</string>
+    <string name="all_genres">Wszystkie gatunki</string>
+    <string name="settings">Ustawienia</string>
+    <string name="language">Język</string>
+    <string name="select_language">Wybierz język</string>
+    <string name="support_and_report">Wsparcie i zgłoś problem</string>
+    <string name="clear_cache">Wyczyść pamięć podręczną</string>
+    <string name="logout">Wyloguj się</string>
+    <string name="guest_user">Użytkownik gość</string>
+    <string name="continue_as_guest">KONTYNUUJ JAKO GOŚĆ</string>
+    <string name="total_content">Całkowita zawartość</string>
+    <string name="approx_hours">Około godzin</string>
+    <string name="favorites">Ulubione</string>
+    <string name="watching">Oglądane</string>
+    <string name="finished">Ukończone</string>
+    <string name="watch_later">Obejrzyj później</string>
+    <string name="cancel">Anuluj</string>
+</resources>

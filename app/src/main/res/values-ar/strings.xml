@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CFilm</string>
+    <string name="tab_home">الرئيسية</string>
+    <string name="tab_movies">أفلام</string>
+    <string name="tab_series">مسلسلات</string>
+    <string name="tab_profile">الملف الشخصي</string>
+    <string name="search_placeholder">البحث عن أفلام، مسلسلات، أنمي...</string>
+    <string name="updating_content">جاري تحديث المحتوى...</string>
+    <string name="all_genres">جميع التصنيفات</string>
+    <string name="settings">الإعدادات</string>
+    <string name="language">اللغة</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="support_and_report">الدعم والإبلاغ عن مشكلة</string>
+    <string name="clear_cache">مسح التخزين المؤقت</string>
+    <string name="logout">تسجيل الخروج</string>
+    <string name="guest_user">مستخدم زائر</string>
+    <string name="continue_as_guest">المتابعة كزائر</string>
+    <string name="total_content">إجمالي المحتوى</string>
+    <string name="approx_hours">الساعات التقريبية</string>
+    <string name="favorites">المفضلة</string>
+    <string name="watching">قيد المشاهدة</string>
+    <string name="finished">المكتملة</string>
+    <string name="watch_later">المشاهدة لاحقاً</string>
+    <string name="cancel">إلغاء</string>
+</resources>
